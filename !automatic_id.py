@@ -2,17 +2,24 @@ import datetime
 import os
 LOG_FILENAME = "_log.csv"
 
-def get_files_without_id():
-    current_dir = os.getcwd()
-    all_files = os.listdir(current_dir)
-
+def get_files_without_id(path, is_recursive):
     i = 0
     without_id = []
-    for file_name in all_files:
-        if file_name != "!automatic_id.py" and file_name != LOG_FILENAME:
-            if "★" not in file_name:
-                without_id.append(file_name)
-                i += 1
+    
+    entries = os.listdir(path)
+
+    for entry in entries:
+        full_path = os.path.join(path, entry)
+        if os.path.isdir(full_path) and is_recursive:
+            additional_i, additional_without_id = get_files_without_id(full_path, is_recursive)
+            i += additional_i
+            without_id += additional_without_id
+        elif os.path.isfile(full_path):
+            if entry != "!automatic_id.py" and entry != LOG_FILENAME:
+                if "★" not in entry:
+                    without_id.append(full_path)
+                    i += 1
+
     return i, without_id
 
 def assign_id(is_replace_full, without_id):
@@ -28,7 +35,10 @@ def assign_id(is_replace_full, without_id):
         with open(LOG_FILENAME, "a") as log_file:
             log_file.write(f"{file},{ID},{file_extension}\n")
 
-i, unsorted_files = get_files_without_id()
+use_recursive_search = True if input(f"Would you like to include subfolders in the ID assignment? Y/n ") == "Y" else False
+
+i, unsorted_files = get_files_without_id(os.getcwd(), use_recursive_search)
+
 if i == 0:
     exit()
 is_answered = False
