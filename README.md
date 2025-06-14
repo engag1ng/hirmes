@@ -11,20 +11,36 @@ This is a simple step-by-step guide on how to use this script.
 > Make sure to check `Add to PATH` when installing!
   
 ### Installation
-1. Get a copy of the script and log file. Choose either option:
+1. Download the project files:
 
   - 1.1 Click the green *Code* button on top of the page and then click *Download Zip* (recommended)
   <img src="https://github.com/user-attachments/assets/1df8bd00-9800-4365-959a-e781238330fa" width="75%" height="75%">
   
   - 1.2 `git clone https://github.com/engag1ng/automatic-id.git` (for advanced users)
-3. Move the folder to your desired location
+2. Move the **ENTIRE** folder to your desired location
+3. Open a command line in that folder. On Windows you can do so by right clicking into the folder and 'Open In Terminal'
+4. Run the following commands:
+```cmd
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+``` 
 ### Usage
-1. To use the script simply move the script and log file into the folder with the files that you want to assign ID's too. 
-2. Then execute the script by double clicking it.
+1. Execute the script by double clicking it.
+2. Make inputs based on your needs.
 3. A history of changes can be found in the log file.
 
 > [!WARNING]
 > Do NOT rename the script or log file; this will break the script!
+
+## Documentation
+### Tokenizer
+List of supported file types:
+- PDF
+- DOCX
+- PPTX
+- TXT
+- MD
 
 ## License
 This project is licensed under the MIT license! To learn more please visit https://opensource.org/license/mit 
