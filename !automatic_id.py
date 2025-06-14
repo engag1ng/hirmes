@@ -2,6 +2,8 @@ import datetime
 import os
 LOG_FILENAME = "_log.csv"
 
+ignore_list = ["!automatic_id.py", LOG_FILENAME, ".git", ".backend", "LICENSE", "README.md"]
+
 def get_files_without_id(path, is_recursive):
     i = 0
     without_id = []
@@ -10,12 +12,12 @@ def get_files_without_id(path, is_recursive):
 
     for entry in entries:
         full_path = os.path.join(path, entry)
-        if os.path.isdir(full_path) and is_recursive:
-            additional_i, additional_without_id = get_files_without_id(full_path, is_recursive)
-            i += additional_i
-            without_id += additional_without_id
-        elif os.path.isfile(full_path):
-            if entry != "!automatic_id.py" and entry != LOG_FILENAME:
+        if entry not in ignore_list:
+            if os.path.isdir(full_path) and is_recursive:
+                additional_i, additional_without_id = get_files_without_id(full_path, is_recursive)
+                i += additional_i
+                without_id += additional_without_id
+            elif os.path.isfile(full_path):
                 if "★" not in entry:
                     without_id.append(full_path)
                     i += 1
@@ -25,12 +27,17 @@ def get_files_without_id(path, is_recursive):
 def assign_id(is_replace_full, without_id):
     for file in without_id:
         ID = datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")
-        file_name, file_extension = os.path.splitext(file)
+        dir_name = os.path.dirname(file)
+        base_name = os.path.basename(file)
+        file_name, file_extension = os.path.splitext(base_name)
+
         if is_replace_full:
-            file_name_with_id = "★ " + ID + file_extension
+            new_name = "★ " + ID + file_extension
         else:
-            file_name_with_id = file_name + " ★ " + ID + file_extension
-        os.rename(file, file_name_with_id)
+            new_name = file_name + " ★ " + ID + file_extension
+
+        new_path = os.path.join(dir_name, new_name)
+        os.rename(file, new_path)
 
         with open(LOG_FILENAME, "a") as log_file:
             log_file.write(f"{file},{ID},{file_extension}\n")
@@ -38,6 +45,7 @@ def assign_id(is_replace_full, without_id):
 use_recursive_search = True if input(f"Would you like to include subfolders in the ID assignment? Y/n ") == "Y" else False
 
 i, unsorted_files = get_files_without_id(os.getcwd(), use_recursive_search)
+print(unsorted_files)
 
 if i == 0:
     exit()
