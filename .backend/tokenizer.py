@@ -94,5 +94,3 @@ def tokenize(content):
 def stop_list():
     with open(".backend/stop_list.txt", 'r', encoding="utf-8") as file:
         return file.read().split("\n")
-
-print(pdf("testpdf.pdf"))
