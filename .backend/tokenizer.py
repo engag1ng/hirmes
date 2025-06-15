@@ -67,7 +67,7 @@ def tokenize(content):
 
     for line in split_by_line:
         for text in line.split():
-            cleaned = text.strip('",.“”>`!?')
+            cleaned = text.strip('",.“”>`!?;=')
 
             if len(cleaned) == 1 and cleaned in filter_set:
                 continue
@@ -94,3 +94,19 @@ def tokenize(content):
 def stop_list():
     with open(".backend/stop_list.txt", 'r', encoding="utf-8") as file:
         return file.read().split("\n")
+
+LOGICAL_OPERATORS = {"AND", "OR", "NOT", "(", ")"}
+
+def tokenize_query(query):
+    pattern = r'\bAND\b|\bOR\b|\bNOT\b|\(|\)|\w+'
+    tokens = re.findall(pattern, query)
+
+    processed_tokens = []
+    for token in tokens:
+        if token in LOGICAL_OPERATORS:
+            processed_tokens.append(token)
+        else:
+            term_tokens = tokenize(token.lower())
+            processed_tokens.extend(term_tokens)
+
+    return processed_tokens
