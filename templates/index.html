@@ -22,21 +22,15 @@
         <button type="submit">Start Indexing</button>
     </form>
 
-    {% if data %}
-    <h2>Results:</h2>
-    <p>Indexed {{ data }} files</p>
-    {% endif %}
-
-    <!-- Search Form -->
     <h2>Search Files</h2>
     <form action="/search" method="get">
         <input type="text" name="query" placeholder="Search..." required>
         <button type="submit">Search</button>
     </form>
 
-    {% if data %}
+    {% if i %}
         <h2>Results:</h2>
-        <p>Indexed {{ data }} files</p>
+        <p>Indexed {{ i }} files</p>
     {% endif %}
 
     {% if search_results %}

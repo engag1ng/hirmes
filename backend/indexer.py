@@ -77,10 +77,10 @@ def assign_id(is_replace_full, without_id):
             new_name = file_name + " ★ " + ID + file_extension
 
         new_path = os.path.join(dir_name, new_name)
-        with_id.append(new_path)
         os.rename(file, new_path)
+        with_id.append(new_path)
 
         with open(LOG_FILENAME, "a") as log_file:
             log_file.write(f"{file},{ID},{file_extension}\n")
         
-        return new_path
+    return with_id
