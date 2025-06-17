@@ -1,10 +1,8 @@
-from tokenizer import tokenize, tokenize_query
+from backend.tokenizer import tokenize, tokenize_query
 import dbm
 import pickle
 
-db_path = '.backend/index.db'
-
-query = input("What are you looking for? ")
+db_path = 'backend/index.db'
 
 precedence = {
     "NOT": 3,
@@ -67,12 +65,15 @@ def evaluate_rpn(rpn_tokens, db):
             stack.append(doc_ids)
     return stack[0] if stack else set()
 
-tokenized_query = tokenize_query(query)
+def search_index(query):
+    tokenized_query = tokenize_query(query)
 
-try: 
-    with dbm.open(db_path, 'r') as db:
-        rpn = to_rpn(tokenized_query)
-        result_docs = evaluate_rpn(rpn, db)
-        print("Matching document IDs:", result_docs)
-except dbm.error:
-    print("You have not indexed any documents yet, or the database could not be found.")
+    try: 
+        with dbm.open(db_path, 'r') as db:
+            rpn = to_rpn(tokenized_query)
+            result_docs = evaluate_rpn(rpn, db)
+            print("Matching document IDs:", result_docs)
+    except dbm.error:
+        print("You have not indexed any documents yet, or the database could not be found.")
+
+    return result_docs

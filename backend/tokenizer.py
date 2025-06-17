@@ -92,7 +92,7 @@ def tokenize(content):
     return sorted(freq_dict.items(), key=lambda x: x[1])
 
 def stop_list():
-    with open(".backend/stop_list.txt", 'r', encoding="utf-8") as file:
+    with open("backend/stop_list.txt", 'r', encoding="utf-8") as file:
         return file.read().split("\n")
 
 LOGICAL_OPERATORS = {"AND", "OR", "NOT", "(", ")"}

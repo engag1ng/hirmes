@@ -1,3 +1,5 @@
 pymupdf4llm
 docx2txt
 python-pptx
+
+flask

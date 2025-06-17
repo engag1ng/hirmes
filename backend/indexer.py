@@ -1,8 +1,47 @@
-import datetime
+import dbm
+import pickle
+from pathlib import Path
+from backend.tokenizer import pdf, docx, markdown, pptx, txt
 import os
-LOG_FILENAME = "_log.csv"
+import datetime
 
-ignore_list = ["!automatic_id.py", LOG_FILENAME, ".git", ".backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
+db_path = 'backend/index.db'
+LOG_FILENAME = "log.csv"
+ignore_list = ["app.py", LOG_FILENAME, ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
+
+
+dbm.open(db_path, 'c')
+
+def index_files(paths):
+    for path in paths:
+        ext = Path(path).suffix.lower().lstrip(".")
+
+        extractors = {
+            "pdf": pdf,
+            "txt": txt,
+            "docx": docx,
+            "doc": docx,
+            "md": markdown,
+            "pptx": pptx
+        }
+
+        if ext not in extractors:
+            print(f"Unsupported file type: {ext}")
+            return
+
+        tokens = extractors[ext](path)
+
+        with dbm.open(db_path, 'c') as db:
+            for token in tokens:
+                key = token[0].encode()
+
+                if key in db:
+                    postings = pickle.loads(db[key])
+                    if path not in postings:
+                        postings.append(path)
+                        db[key] = pickle.dumps(sorted(postings))
+                else:
+                    db[key] = pickle.dumps([path])
 
 def get_files_without_id(path, is_recursive):
     i = 0
@@ -25,6 +64,7 @@ def get_files_without_id(path, is_recursive):
     return i, without_id
 
 def assign_id(is_replace_full, without_id):
+    with_id = []
     for file in without_id:
         ID = datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")
         dir_name = os.path.dirname(file)
@@ -37,28 +77,10 @@ def assign_id(is_replace_full, without_id):
             new_name = file_name + " ★ " + ID + file_extension
 
         new_path = os.path.join(dir_name, new_name)
+        with_id.append(new_path)
         os.rename(file, new_path)
 
         with open(LOG_FILENAME, "a") as log_file:
             log_file.write(f"{file},{ID},{file_extension}\n")
-
-original_path = input("Please provide the path to the folder in which you want to assign ID's (without paranthesis) i.e C:\Users\<username>\Documents\ ")
-
-use_recursive_search = True if input("Would you like to include subfolders in the ID assignment? Y/n ") == "Y" else False
-
-i, unsorted_files = get_files_without_id(original_path, use_recursive_search)
-print(unsorted_files)
-
-if i == 0:
-    exit()
-is_answered = False
-while not is_answered:
-    replace_full_name_input = input(f"There are {i} files without an ID. Would you like to replace the FULL file name? Y/n or help ")
-    if replace_full_name_input == "Y":
-        assign_id(True, unsorted_files)
-        is_answered = True
-    elif replace_full_name_input == "n":
-        assign_id(False, unsorted_files)
-        is_answered = True
-    elif replace_full_name_input == "help":
-        print("There are currently two options for assigning an ID:\n'Y' means the full filename gets replaced like this:\ntest.txt -> ★ ID.txt\n'n' means the ID only gets appended to the filename like this:\ntest.txt -> test ★ ID.txt")
+        
+        return new_path

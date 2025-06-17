@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flask Input Form</title>
+</head>
+<body>
+    <h1>Indexing Tool</h1>
+    <form action="/indexing" method="post">
+        <label for="path">Path:</label>
+        <input type="text" id="path" name="path" required><br><br>
+
+        <label>
+            <input type="checkbox" name="recursive">
+            Include Subfolders
+        </label><br>
+
+        <label>
+            <input type="checkbox" name="replace_filename">
+            Replace full filename
+        </label><br><br>
+
+        <button type="submit">Start Indexing</button>
+    </form>
+
+    {% if data %}
+    <h2>Results:</h2>
+    <p>Indexed {{ data }} files</p>
+    {% endif %}
+
+    <!-- Search Form -->
+    <h2>Search Files</h2>
+    <form action="/search" method="get">
+        <input type="text" name="query" placeholder="Search..." required>
+        <button type="submit">Search</button>
+    </form>
+
+    {% if data %}
+        <h2>Results:</h2>
+        <p>Indexed {{ data }} files</p>
+    {% endif %}
+
+    {% if search_results %}
+        <h2>Search Results:</h2>
+        <ul>
+            {% for item in search_results %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
