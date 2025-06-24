@@ -1,0 +1,5 @@
+npm init -y
+npm install electron --save-dev
+npm install electron-builder --save-dev
+cd electron_app
+npm run dist

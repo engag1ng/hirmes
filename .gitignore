@@ -1,2 +1,4 @@
 .venv
 testfolder
+electron_app/dist
+electron_app/node_modules
