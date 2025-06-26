@@ -8,44 +8,54 @@
 </head>
 <body>
     <div class="content">
-    <h1>Information Retrieval system</h1>
-    <h2>Indexer</h2>
-    <form action="/indexing" method="post">
-        <label for="path">Path:</label>
-        <input type="text" id="path" name="path" required><br><br>
+        <h1>Information Retrieval system</h1>
+        <h2>Indexer</h2>
+        <form method="POST" action="/indexing">
+            <label for="path">Path:</label>
+            <input type="text" id="path" name="path" required><br><br>
 
-        <label>
-            <input type="checkbox" name="recursive">
-            Include Subfolders
-        </label><br>
+            <input type="file" id="folderInput" webkitdirectory directory style="display: none;" />
 
-        <label>
-            <input type="checkbox" name="replace_filename">
-            Replace full filename
-        </label><br><br>
+            <button type="button" onclick="document.getElementById('folderInput').click()">Browse Folder</button>
 
-        <button type="submit">Start Indexing</button>
-    </form>
+            <label><input type="checkbox" name="recursive"> Include Subfolders</label>
+            <label><input type="checkbox" name="replace_filename"> Replace Filename</label><br><br>
 
-    <h2>Search Files</h2>
-    <form action="/search" method="get">
-        <input type="text" name="query" placeholder="Search..." required>
-        <button type="submit">Search</button>
-    </form>
+            <button type="submit">Index</button>
+        </form>
 
-    {% if i %}
-        <h2>Results:</h2>
-        <p>Indexed {{ i }} files</p>
-    {% endif %}
+        <script>
+            document.getElementById('folderInput').addEventListener('change', function(event) {
+            const files = event.target.files;
 
-    {% if search_results %}
-        <h2>Search Results:</h2>
-        <ul>
-            {% for item in search_results %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+            if (files.length > 0) {
+                const fullPath = files[0].webkitRelativePath;
+                const folderPath = fullPath.split('/')[0];  // top folder name
+                document.getElementById('path').value = folderPath;
+            }
+            });
+        </script>
+
+
+        <h2>Search Files</h2>
+        <form action="/search" method="get">
+            <input type="text" name="query" placeholder="Search..." required>
+            <button type="submit">Search</button>
+        </form>
+
+        {% if i %}
+            <h2>Results:</h2>
+            <p>Indexed {{ i }} files</p>
+        {% endif %}
+
+        {% if search_results %}
+            <h2>Search Results:</h2>
+            <ul>
+                {% for item in search_results %}
+                    <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
     </div>
 </body>
 </html>
