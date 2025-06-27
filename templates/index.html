@@ -25,8 +25,14 @@
 
             <button type="button" onclick="document.getElementById('folderInput').click()">Browse Folder</button>
 
-            <label><input type="checkbox" name="recursive"> Include Subfolders</label>
-            <label><input type="checkbox" name="replace_filename"> Replace Filename</label><br><br>
+            <label>
+                <input type="checkbox" name="recursive" {% if settings and settings.recursive %}checked{% endif %}>
+                Include Subfolders
+            </label>
+            <label>
+                <input type="checkbox" name="replace_filename" {% if settings and settings.replace_filename %}checked{% endif %}>
+                Replace Filename
+            </label><br><br>
 
             <button type="submit">Index</button>
         </form>
