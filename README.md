@@ -19,7 +19,7 @@ This is a simple step-by-step guide on how to use this program.
   - 1.1 Click the green *Code* button on top of the page and then click *Download Zip* (recommended)
   <img src="https://github.com/user-attachments/assets/1df8bd00-9800-4365-959a-e781238330fa" width="75%" height="75%">
   
-  - 1.2 `git clone https://github.com/engag1ng/automatic-id.git` (for advanced users)
+  - 1.2 `git clone https://github.com/engag1ng/hirmes.git` (for advanced users)
 2. Move the **ENTIRE** folder to your desired location
 3. Open a command line in that folder. On Windows you can do so by right clicking into the folder and 'Open In Terminal'
 4. Run the following commands:
