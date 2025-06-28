@@ -1,5 +1,8 @@
-# automatic-id
 > **created by engag1ng**
+
+<img src="https://github.com/user-attachments/assets/96a0beba-dc51-4a47-8a13-0f4801b08dbc" width="75%" height="75%">
+
+A web-based IR sytem for indexing, searching and assigning ID's to files.
 
 **⭐Please star this repository!**
 ## Getting started
@@ -33,12 +36,17 @@ Windows: `run.bat`
 Linux: `run.sh`
 
 2. Index files
+
 2.1 Select the source folder that contains the files you would like to index.
+
 2.2 Select your preferred settings using the checkboxes
+
 2.3 Click **Index** and wait. The page will reload, when the indexing process is done.
 
 3. Search files
+
 3.1 Enter your search query. [Read more](#querying)
+
 3.2 Click **Search**.
 
 4. When you close the terminal, the web server closes and the service terminates. To restart the service simply return to Step 1.
