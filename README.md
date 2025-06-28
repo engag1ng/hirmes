@@ -3,7 +3,7 @@
 
 **⭐Please star this repository!**
 ## Getting started
-This is a simple step-by-step guide on how to use this script.
+This is a simple step-by-step guide on how to use this program.
 ### Prerequisites
 - Python3 (tested on Python 3.13)
   - Visit https://www.python.org/downloads/ and download the latest version of Python3
@@ -26,21 +26,73 @@ python -m venv .venv
 pip install -r requirements.txt
 ``` 
 ### Usage
-1. Execute the script by double clicking it.
-2. Make inputs based on your needs.
-3. A history of changes can be found in the log file.
+1. Execute the appropiate run script.
 
-> [!WARNING]
-> Do NOT rename the script or log file; this will break the script!
+Windows: `run.bat`
+
+Linux: `run.sh`
+
+2. Index files
+2.1 Select the source folder that contains the files you would like to index.
+2.2 Select your preferred settings using the checkboxes
+2.3 Click **Index** and wait. The page will reload, when the indexing process is done.
+
+3. Search files
+3.1 Enter your search query. [Read more](#querying)
+3.2 Click **Search**.
+
+4. When you close the terminal, the web server closes and the service terminates. To restart the service simply return to Step 1.
 
 ## Documentation
 ### Tokenizer
 List of supported file types:
-- PDF
-- DOCX
-- PPTX
-- TXT
-- MD
+- PDF files
+- Word documents (.DOCX)
+- PowerPoint presentations (.PPTX)
+- TXT files
+- Markdown files (.MD)
+### Querying
+The querying engine supports different search operators to refine your search. A full list can be found below:
+
+**Paranthesis ()**:
+Paranthesis can be used to execute a certain portion of the query first and then further evaluate it later. Those familiar with algebra will recognise this from mathematic equations.
+
+Example query:
+```
+(project AND management) OR project-management
+```
+
+This will first evaluate the expression in the paranthesis and then use it's result for further computation.
+
+**AND Operator**:
+The AND operator can be used to express, that a file has to contain both search terms for it to be regarded.
+
+Example query:
+```
+project AND management
+```
+
+This will only return files that contain the words *project* and *management*.
+
+**OR Operator**:
+The OR operator can be used to express, that a file has to contain one of two search terms for it to be regarded.
+
+Example query:
+```
+management OR geography
+```
+
+This will return all files that contain either *management* or *geography*.
+
+**NOT Operator**:
+The NOT operator disregards all files, that contain a certain search term.
+
+Example query:
+```
+management NOT geography
+```
+
+This will return all files that contain *management* but not *geography*.
 
 ## License
 This project is licensed under the MIT license! To learn more please visit https://opensource.org/license/mit 
