@@ -4,6 +4,7 @@ from backend.search import search_index
 import webbrowser
 import json
 import os
+from random import randint
 
 SETTINGS_FILE = 'config.json'
 
@@ -17,15 +18,17 @@ def save_settings(settings):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f)
 
-def render_index(i=None):
+def render_index_html(i=None):
+    if randint(1, 5) == 5:
+        check_file_status()
     settings = load_settings()
     return render_template('index.html', i=i, settings=settings)
 
 app = Flask(__name__)
 
 @app.route('/')
-def index():
-    return render_index()
+def index_html():
+    return render_index_html()
 
 @app.route('/indexing', methods=['POST'])
 def indexing():

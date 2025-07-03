@@ -4,13 +4,10 @@ from pathlib import Path
 from backend.tokenizer import pdf, docx, markdown, pptx, txt
 import os
 import datetime
+from log import write_log
 
 db_path = 'backend/index.db'
-LOG_FILENAME = "log.csv"
 ignore_list = ["app.py", LOG_FILENAME, ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
-
-
-dbm.open(db_path, 'c')
 
 def index_files(paths):
     for path in paths:
@@ -80,7 +77,10 @@ def assign_id(is_replace_full, without_id):
         os.rename(file, new_path)
         with_id.append(new_path)
 
-        with open(LOG_FILENAME, "a") as log_file:
-            log_file.write(f"{file},{ID},{file_extension}\n")
+        write_log("0", ID, file, file_extension)
         
     return with_id
+    
+def check_file_status():
+    with dbm.open(db_path, "c") as db:
+        print("CODE NEEDED")
