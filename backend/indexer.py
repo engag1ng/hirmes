@@ -4,11 +4,10 @@ from pathlib import Path
 from backend.tokenizer import pdf, docx, markdown, pptx, txt
 import os
 import datetime
-from log import write_log
 from backend.dictionary import add_dictionary
 
 db_path = 'backend/index.db'
-ignore_list = ["app.py", LOG_FILENAME, ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
+ignore_list = ["app.py", ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
 
 def index_files(paths):
     for path in paths:
@@ -79,7 +78,5 @@ def assign_id(is_replace_full, without_id):
         new_path = os.path.join(dir_name, new_name)
         os.rename(file, new_path)
         with_id.append(new_path)
-
-        write_log("0", ID, file, file_extension)
         
     return with_id
