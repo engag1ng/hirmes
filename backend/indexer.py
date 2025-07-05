@@ -5,6 +5,7 @@ from backend.tokenizer import pdf, docx, markdown, pptx, txt
 import os
 import datetime
 from log import write_log
+from backend.dictionary import add_dictionary
 
 db_path = 'backend/index.db'
 ignore_list = ["app.py", LOG_FILENAME, ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
@@ -39,6 +40,8 @@ def index_files(paths):
                         db[key] = pickle.dumps(sorted(postings))
                 else:
                     db[key] = pickle.dumps([path])
+                
+                add_dictionary(token[0])
 
 def get_files_without_id(path, is_recursive):
     i = 0
@@ -80,7 +83,3 @@ def assign_id(is_replace_full, without_id):
         write_log("0", ID, file, file_extension)
         
     return with_id
-    
-def check_file_status():
-    with dbm.open(db_path, "c") as db:
-        print("CODE NEEDED")

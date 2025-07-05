@@ -82,16 +82,6 @@ project AND management
 
 This will only return files that contain the words *project* and *management*.
 
-**OR Operator**:
-The OR operator can be used to express, that a file has to contain one of two search terms for it to be regarded.
-
-Example query:
-```
-management OR geography
-```
-
-This will return all files that contain either *management* or *geography*.
-
 **NOT Operator**:
 The NOT operator disregards all files, that contain a certain search term.
 

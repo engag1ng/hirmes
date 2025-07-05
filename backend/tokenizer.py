@@ -95,10 +95,10 @@ def stop_list():
     with open("backend/stop_list.txt", 'r', encoding="utf-8") as file:
         return file.read().split("\n")
 
-LOGICAL_OPERATORS = {"AND", "OR", "NOT", "(", ")"}
+LOGICAL_OPERATORS = {"AND", "NOT", "(", ")"}
 
 def tokenize_query(query):
-    pattern = r'\bAND\b|\bOR\b|\bNOT\b|\(|\)|\w+'
+    pattern = r'\bAND\b|\bNOT\b|\(|\)|\w+'
     tokens = re.findall(pattern, query)
 
     processed_tokens = []

@@ -1,19 +1,19 @@
 from backend.tokenizer import tokenize, tokenize_query
 import dbm
 import pickle
+from backend.dictionary import dictionary
 
 db_path = 'backend/index.db'
 
 precedence = {
     "NOT": 3,
     "AND": 2,
-    "OR": 1
 }
 
 right_associative = {"NOT"}
 
 def is_operator(token):
-    return token in {"AND", "OR", "NOT"}
+    return token in {"AND", "NOT"}
 
 def to_rpn(tokens):
     """Converts infix boolean expression to postfix (RPN) using Shunting Yard algorithm."""
@@ -54,8 +54,6 @@ def evaluate_rpn(rpn_tokens, db):
                 left = stack.pop()
                 if token == "AND":
                     result = left & right
-                elif token == "OR":
-                    result = left | right
             stack.append(result)
         else:
             try:
@@ -67,13 +65,49 @@ def evaluate_rpn(rpn_tokens, db):
 
 def search_index(query):
     tokenized_query = tokenize_query(query)
+    spellchecked_query = spellcheck(tokenized_query)
 
     try: 
         with dbm.open(db_path, 'r') as db:
-            rpn = to_rpn(tokenized_query)
+            rpn = to_rpn(spellchecked_query)
             result_docs = evaluate_rpn(rpn, db)
             print("Matching document IDs:", result_docs)
     except dbm.error:
         print("You have not indexed any documents yet, or the database could not be found.")
 
     return result_docs
+
+LOGICAL_OPERATORS = {"AND", "NOT", "(", ")"}
+def spellcheck(query):
+    dic = dictionary()
+    for i, word in enumerate(query):
+        if word not in LOGICAL_OPERATORS:
+            min_distance = float('inf')
+            MAX_DISTANCE = max(1, len(word) // 3)
+            closest_entry = None
+
+            for entry in dic:
+                dist = levenshtein_distance(word, entry)
+                if dist == 0:
+                    closest_entry = entry
+                    min_distance = 0
+                    break
+                elif dist < min_distance:
+                    min_distance = dist
+                    closest_entry = entry 
+
+            if min_distance < MAX_DISTANCE:
+                query[i] = closest_entry
+    return query
+
+def levenshtein_distance(a: str, b: str) -> int:
+    len_a = len(a)
+    len_b = len(b)
+    if len_b == 0:
+        return len_a
+    elif len_a == 0:
+        return len_b
+    elif a[0] == b[0]:
+        return lev(a[1:], b[1:])
+    else:
+        return 1 + min(lev(a[1:], b), lev(a, b[1:]), lev(a[1:], b[1:]))
