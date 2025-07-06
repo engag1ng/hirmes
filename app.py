@@ -18,11 +18,9 @@ def save_settings(settings):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f)
 
-def render_index_html(i=None):
-    if randint(1, 5) == 5:
-        check_file_status()
+def render_index_html(i=None, search_results=None):
     settings = load_settings()
-    return render_template('index.html', i=i, settings=settings)
+    return render_template('index.html', i=i, search_results=search_results, settings=settings)
 
 app = Flask(__name__)
 
@@ -45,13 +43,13 @@ def indexing():
     with_id = assign_id(replace_filename, without_id)
     index_files(with_id)
 
-    return render_index(i=i)
+    return render_index_html(i=i)
 
 @app.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query')
-    results = search_index(query)  # You must define this in backend/indexer.py
-    return render_template('index.html', i=None, search_results=results)
+    results = search_index(query)
+    return render_index_html(search_results=results)
 
 if __name__ == '__main__':
     webbrowser.open("http://127.0.0.1:5000")

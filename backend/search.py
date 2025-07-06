@@ -57,11 +57,11 @@ def evaluate_rpn(rpn_tokens, db):
             stack.append(result)
         else:
             try:
-                doc_ids = set(pickle.loads(db[token[0].encode()]))
+                doc_ids = pickle.loads(db[token.encode()])
             except KeyError:
-                doc_ids = set()
+                doc_ids = []
             stack.append(doc_ids)
-    return stack[0] if stack else set()
+    return stack[0] if stack else [] 
 
 def search_index(query):
     tokenized_query = tokenize_query(query)
@@ -84,19 +84,22 @@ def spellcheck(query):
         if word not in LOGICAL_OPERATORS:
             min_distance = float('inf')
             MAX_DISTANCE = max(1, len(word) // 3)
+            ACCEPT_DISTANCE = max(1, len(word) // 4)
             closest_entry = None
 
             for entry in dic:
-                dist = levenshtein_distance(word, entry)
-                if dist == 0:
-                    closest_entry = entry
-                    min_distance = 0
+                if word in dic:
                     break
-                elif dist < min_distance:
+                dist = levenshtein_distance(word, entry)
+                if dist <= ACCEPT_DISTANCE:
+                    min_distance = 0
+                    closest_entry = entry
+                    break
+                if dist < min_distance:
                     min_distance = dist
                     closest_entry = entry 
 
-            if min_distance < MAX_DISTANCE:
+            if min_distance <= MAX_DISTANCE:
                 query[i] = closest_entry
     return query
 
@@ -108,6 +111,6 @@ def levenshtein_distance(a: str, b: str) -> int:
     elif len_a == 0:
         return len_b
     elif a[0] == b[0]:
-        return lev(a[1:], b[1:])
+        return levenshtein_distance(a[1:], b[1:])
     else:
-        return 1 + min(lev(a[1:], b), lev(a, b[1:]), lev(a[1:], b[1:]))
+        return 1 + min(levenshtein_distance(a[1:], b), levenshtein_distance(a, b[1:]), levenshtein_distance(a[1:], b[1:]))

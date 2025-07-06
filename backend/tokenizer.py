@@ -13,7 +13,7 @@ def pdf(file_path):
     pages = []
     doc = pymupdf.open(file_path)
     for page in doc:
-        text = page.get_text().encode("utf8")
+        text = page.get_text()
         pages.append(tokenize(text))
     return pages
 
@@ -113,7 +113,7 @@ def tokenize_query(query):
         if token in LOGICAL_OPERATORS:
             processed_tokens.append(token)
         else:
-            term_tokens = tokenize(token.lower())
-            processed_tokens.extend(term_tokens)
+            term_tokens = tokenize(token.lower())[0][0]
+            processed_tokens.append(term_tokens)
 
     return processed_tokens

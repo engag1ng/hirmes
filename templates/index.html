@@ -23,32 +23,17 @@
 
             <input type="file" id="folderInput" webkitdirectory directory style="display: none;" />
 
-            <button type="button" onclick="document.getElementById('folderInput').click()">Browse Folder</button>
-
             <label>
                 <input type="checkbox" name="recursive" {% if settings and settings.recursive %}checked{% endif %}>
                 Include Subfolders
             </label>
             <label>
                 <input type="checkbox" name="replace_filename" {% if settings and settings.replace_filename %}checked{% endif %}>
-                Replace Filename
+                Replace Entire Filename
             </label><br><br>
 
             <button type="submit">Index</button>
         </form>
-
-        <script>
-            document.getElementById('folderInput').addEventListener('change', function(event) {
-            const files = event.target.files;
-
-            if (files.length > 0) {
-                const fullPath = files[0].webkitRelativePath;
-                const folderPath = fullPath.split('/')[0];  // top folder name
-                document.getElementById('path').value = folderPath;
-            }
-            });
-        </script>
-
 
         <h2>Search Files</h2>
         <form action="/search" method="get">

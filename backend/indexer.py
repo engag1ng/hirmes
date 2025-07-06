@@ -36,8 +36,8 @@ def index_files(paths):
                     if key in db:
                         postings = pickle.loads(db[key])
                         if path not in postings:
-                            postings.append(tuple(path,i+1,token[1])) # (Path, Page, Term frequency, Snippet?)
-                            db[key] = pickle.dumps(sorted(postings))
+                            postings.append([path,i+1,token[1]]) # (Path, Page, Term frequency, Snippet?)
+                            db[key] = pickle.dumps(postings)
                     else:
                         db[key] = pickle.dumps([path])
                     
@@ -47,7 +47,10 @@ def get_files_without_id(path, is_recursive):
     i = 0
     without_id = []
     
-    entries = os.listdir(path)
+    try:
+        entries = os.listdir(path)
+    except FileNotFoundError:
+        return 0, []
 
     for entry in entries:
         full_path = os.path.join(path, entry)
