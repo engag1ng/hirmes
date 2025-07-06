@@ -1,4 +1,4 @@
-pymupdf4llm
+pymupdf
 docx2txt
 python-pptx
 flask

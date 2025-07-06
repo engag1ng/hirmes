@@ -26,21 +26,22 @@ def index_files(paths):
             print(f"Unsupported file type: {ext}")
             return
 
-        tokens = extractors[ext](path)
+        pages = extractors[ext](path)
 
         with dbm.open(db_path, 'c') as db:
-            for token in tokens:
-                key = token[0].encode()
+            for i, tokens in enumerate(pages):
+                for token in tokens:
+                    key = token[0].encode()
 
-                if key in db:
-                    postings = pickle.loads(db[key])
-                    if path not in postings:
-                        postings.append(path)
-                        db[key] = pickle.dumps(sorted(postings))
-                else:
-                    db[key] = pickle.dumps([path])
-                
-                add_dictionary(token[0])
+                    if key in db:
+                        postings = pickle.loads(db[key])
+                        if path not in postings:
+                            postings.append(tuple(path,i+1,token[1])) # (Path, Page, Term frequency, Snippet?)
+                            db[key] = pickle.dumps(sorted(postings))
+                    else:
+                        db[key] = pickle.dumps([path])
+                    
+                    add_dictionary(token[0])
 
 def get_files_without_id(path, is_recursive):
     i = 0

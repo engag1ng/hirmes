@@ -33,8 +33,6 @@ pip install -r requirements.txt
 
 Windows: `run.bat`
 
-Linux: `run.sh`
-
 2. Index files
 
 2.1 Select the source folder that contains the files you would like to index.
