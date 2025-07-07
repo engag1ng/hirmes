@@ -85,10 +85,13 @@ def spellcheck(query):
             MAX_DISTANCE = max(1, len(word) // 3)
             ACCEPT_DISTANCE = max(1, len(word) // 4)
             closest_entry = None
-
             for entry in dic:
-                if word in dic:
+                if not entry:
+                    continue
+                if entry == word:
                     break
+                if entry[0] != word[0]:
+                    continue
                 dist = levenshtein_distance(word, entry)
                 if dist <= ACCEPT_DISTANCE:
                     min_distance = 0
