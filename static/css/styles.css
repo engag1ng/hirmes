@@ -17,6 +17,7 @@
   --warning: oklch(0.5 0.05 100);
   --success: oklch(0.5 0.05 160);
   --info: oklch(0.5 0.05 260); 
+  --shadow: oklch(0 0 0 / 30%)
 }
 :root[data-theme="dark"] {
   --bg-dark: oklch(0.1 0.005 235);
@@ -33,6 +34,7 @@
   --warning: oklch(0.7 0.05 100);
   --success: oklch(0.7 0.05 160);
   --info: oklch(0.7 0.05 260); 
+  --shadow: oklch(1 0 0 / 30%);
 }
 
 .content {
@@ -87,4 +89,32 @@ input {
 p {
   font-size: 16px;
   color: var(--text-muted);
+}
+
+.popup-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    border-radius: 0;
+}
+
+.popup-box {
+    background: var(--bg);
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px var(--shadow);
+    text-align: center;
+}
+
+.popup-box button {
+    margin-top: 10px;
+}
+
+#indexer {
+
 }

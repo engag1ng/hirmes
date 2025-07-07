@@ -35,11 +35,10 @@ def index_files(paths):
 
                     if key in db:
                         postings = pickle.loads(db[key])
-                        if path not in postings:
-                            postings.append([path,i+1,token[1]]) # (Path, Page, Term frequency, Snippet?)
-                            db[key] = pickle.dumps(postings)
+                        postings.append([path,i+1,token[1]]) # (Path, Page, Term frequency, Snippet?)
+                        db[key] = pickle.dumps(postings)
                     else:
-                        db[key] = pickle.dumps([path])
+                        db[key] = pickle.dumps([[path,i+1,token[1]]])
                     
                     add_dictionary(token[0])
 

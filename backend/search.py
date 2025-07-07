@@ -60,8 +60,8 @@ def evaluate_rpn(rpn_tokens, db):
                 doc_ids = pickle.loads(db[token.encode()])
             except KeyError:
                 doc_ids = []
-            stack.append(doc_ids)
-    return stack[0] if stack else [] 
+            stack += doc_ids
+    return stack if stack else [] 
 
 def search_index(query):
     tokenized_query = tokenize_query(query)
@@ -71,7 +71,6 @@ def search_index(query):
         with dbm.open(db_path, 'r') as db:
             rpn = to_rpn(spellchecked_query)
             result_docs = evaluate_rpn(rpn, db)
-            print("Matching document IDs:", result_docs)
     except dbm.error:
         print("You have not indexed any documents yet, or the database could not be found.")
 

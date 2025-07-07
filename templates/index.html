@@ -6,54 +6,68 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/theme-toggle.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/popup.js') }}" defer></script>
 </head>
 <body>
-    <div class="content">
-        <h1>Information Retrieval system</h1>
-        <button
-            type="button"
-            id="theme-toggle"
-            title="Toggle light/dark mode"
-            >🌞
-        </button>
-        <h2>Indexer</h2>
-        <form method="POST" action="/indexing">
-            <label for="path">Path:</label>
-            <input type="text" id="path" name="path" required><br><br>
+    <h1>Information Retrieval system</h1>
+    <button
+        type="button"
+        id="theme-toggle"
+        title="Toggle light/dark mode"
+        >🌞
+    </button>
+    <div style="display: flex; justify-content: space-around">
+        <div>
+            <h2>Indexer</h2>
+            <form method="POST" action="/indexing">
+                <label for="path">Path:</label>
+                <input type="text" id="path" name="path" required><br><br>
 
-            <input type="file" id="folderInput" webkitdirectory directory style="display: none;" />
+                <input type="file" id="folderInput" webkitdirectory directory style="display: none;" />
 
-            <label>
-                <input type="checkbox" name="recursive" {% if settings and settings.recursive %}checked{% endif %}>
-                Include Subfolders
-            </label>
-            <label>
-                <input type="checkbox" name="replace_filename" {% if settings and settings.replace_filename %}checked{% endif %}>
-                Replace Entire Filename
-            </label><br><br>
+                <label>
+                    <input type="checkbox" name="recursive" {% if settings and settings.recursive %}checked{% endif %}>
+                    Include Subfolders
+                </label>
+                <label>
+                    <input type="checkbox" name="replace_filename" {% if settings and settings.replace_filename %}checked{% endif %}>
+                    Replace Entire Filename
+                </label><br><br>
 
-            <button type="submit">Index</button>
-        </form>
+                <button type="submit">Index</button>
+            </form>
+        </div>
 
-        <h2>Search Files</h2>
-        <form action="/search" method="get">
-            <input type="text" name="query" placeholder="Search..." required>
-            <button type="submit">Search</button>
-        </form>
-
+        <div>
+            <h2>Search Files</h2>
+            <form action="/search" method="get">
+                <input type="text" name="query" placeholder="Search..." required>
+                <button type="submit">Search</button>
+            </form>
+        </div>
         {% if i %}
-            <h2>Results:</h2>
-            <p>Indexed {{ i }} files</p>
+            <script>
+                window.onload = function() {
+                    showPopup("Indexed {{ i }} file(s).");
+                };
+            </script>
         {% endif %}
 
-        {% if search_results %}
-            <h2>Search Results:</h2>
-            <ul>
-                {% for item in search_results %}
-                    <li>{{ item }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+    </div>
+    {% if search_results %}
+        <h2>Search Results:</h2>
+        <ul>
+            {% for item in search_results %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <!-- Popup structure -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-box">
+            <p id="popupMessage">Hello!</p>
+            <button onclick="closePopup()">Close</button>
+        </div>
     </div>
 </body>
 </html>
