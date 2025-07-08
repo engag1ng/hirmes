@@ -1,32 +1,16 @@
 import dbm
 import pickle
-from pathlib import Path
-from backend.tokenizer import pdf, docx, markdown, pptx, txt
 import os
 import datetime
 from backend.dictionary import add_dictionary
+from backend.read import *
 
 db_path = 'backend/index.db'
 ignore_list = ["app.py", ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
 
 def index_files(paths):
     for path in paths:
-        ext = Path(path).suffix.lower().lstrip(".")
-
-        extractors = {
-            "pdf": pdf,
-            "txt": txt,
-            "docx": docx,
-            "doc": docx,
-            "md": markdown,
-            "pptx": pptx
-        }
-
-        if ext not in extractors:
-            print(f"Unsupported file type: {ext}")
-            return
-
-        pages = extractors[ext](path)
+        pages = match_extractor(path)(path, True)
 
         with dbm.open(db_path, 'c') as db:
             for i, tokens in enumerate(pages):

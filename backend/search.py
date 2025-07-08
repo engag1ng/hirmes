@@ -2,77 +2,137 @@ from backend.tokenizer import tokenize, tokenize_query
 import dbm
 import pickle
 from backend.dictionary import dictionary
+from collections import defaultdict
 
 db_path = 'backend/index.db'
+
+def is_operator(token):
+    return token in {"AND", "OR", "NOT"}
 
 precedence = {
     "NOT": 3,
     "AND": 2,
+    "OR": 1
 }
-
 right_associative = {"NOT"}
 
-def is_operator(token):
-    return token in {"AND", "NOT"}
-
 def to_rpn(tokens):
-    """Converts infix boolean expression to postfix (RPN) using Shunting Yard algorithm."""
+    """Converts infix Boolean expression to RPN (postfix) using the Shunting Yard algorithm."""
     output = []
     stack = []
+
     for token in tokens:
-        if token == '(':
+        if token == "(":
             stack.append(token)
-        elif token == ')':
-            while stack and stack[-1] != '(':
+        elif token == ")":
+            while stack and stack[-1] != "(":
                 output.append(stack.pop())
-            stack.pop()  # Remove '('
+            if not stack or stack[-1] != "(":
+                raise ValueError("Mismatched parentheses")
+            stack.pop()
         elif is_operator(token):
-            while (stack and stack[-1] != '(' and
-                   ((token not in right_associative and precedence[token] <= precedence[stack[-1]]) or
-                    (token in right_associative and precedence[token] < precedence[stack[-1]]))):
+            while (
+                stack and stack[-1] != "(" and
+                (
+                    (token not in right_associative and precedence[token] <= precedence[stack[-1]]) or
+                    (token in right_associative and precedence[token] < precedence[stack[-1]])
+                )
+            ):
                 output.append(stack.pop())
             stack.append(token)
         else:
             output.append(token)
+
     while stack:
+        if stack[-1] == "(":
+            raise ValueError("Mismatched parentheses")
         output.append(stack.pop())
+
     return output
 
-def evaluate_rpn(rpn_tokens, db):
-    """Evaluates the RPN expression using the document index in dbm."""
-    stack = []
-    for token in rpn_tokens:
-        if is_operator(token):
-            if token == "NOT":
-                operand = stack.pop()
-                all_docs = set()
-                for key in db.keys():
-                    all_docs.update(pickle.loads(db[key]))
-                result = all_docs - operand
-            else:
-                right = stack.pop()
-                left = stack.pop()
-                if token == "AND":
-                    result = left & right
-            stack.append(result)
-        else:
-            try:
-                doc_ids = pickle.loads(db[token.encode()])
-            except KeyError:
-                doc_ids = []
-            stack += doc_ids
-    return stack if stack else [] 
+def extract_doc_keys(entries):
+    return set((path, page) for path, page, _ in entries)
+
+def evaluate_rpn_ranked(rpn_tokens):
+    """
+    Evaluates an RPN boolean expression with AND, OR, NOT and returns ranked results.
+    Ranking is based on number of terms matched, then total term frequency.
+    """
+    try:
+        with dbm.open(db_path, 'r') as db:
+            stack = []
+            for token in rpn_tokens:
+                if is_operator(token):
+                    if token == "NOT":
+                        operand = stack.pop()
+                        operand_keys = set(operand.keys())
+
+                        all_docs = defaultdict(lambda: {"match_count": 0, "total_tf": 0})
+                        for key in db.keys():
+                            entries = pickle.loads(db[key])
+                            for path, page, tf in entries:
+                                all_docs[(path, page)]["total_tf"] += 0
+
+                        result = {k: v for k, v in all_docs.items() if k not in operand_keys}
+
+                    else:
+                        right = stack.pop()
+                        left = stack.pop()
+                        result = defaultdict(lambda: {"match_count": 0, "total_tf": 0})
+
+                        if token == "AND":
+                            common_keys = left.keys() & right.keys()
+                            for key in common_keys:
+                                result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
+                                result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
+                                result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+                        elif token == "OR":
+                            all_keys = left.keys() | right.keys()
+                            for key in all_keys:
+                                result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
+                                result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
+                                result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+                    stack.append(result)
+
+                else:
+                    doc_map = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set()})
+                    try:
+                        entries = pickle.loads(db[token.encode()])
+                        for path, page, tf in entries:
+                            doc_map[(path, page)]["match_count"] += 1
+                            doc_map[(path, page)]["total_tf"] += tf
+                            doc_map[(path, page)]["terms"].add(token)
+                    except KeyError:
+                        pass 
+                    stack.append(doc_map)
+
+            if len(stack) != 1:
+                raise ValueError("Malformed RPN expression: leftover elements in stack")
+
+            final_map = stack.pop()
+
+            results = [
+                (path, page, data["match_count"], data["total_tf"], data["terms"])
+                for (path, page), data in final_map.items()
+            ]
+            results.sort(key=lambda x: (-x[2], -x[3]))
+
+            return results
+
+    except dbm.error:
+        print("You have not indexed any documents yet, or the database could not be found.")
+        return []
 
 def search_index(query):
     tokenized_query = tokenize_query(query)
     spellchecked_query = spellcheck(tokenized_query)
-
-    try: 
-        with dbm.open(db_path, 'r') as db:
-            rpn = to_rpn(spellchecked_query)
-            result_docs = evaluate_rpn(rpn, db)
-    except dbm.error:
-        print("You have not indexed any documents yet, or the database could not be found.")
+    rpn = to_rpn(spellchecked_query)
+    result_docs = evaluate_rpn_ranked(rpn)
+    for i, result in enumerate(result_docs):
+        if i < 5:
+            result.append(search_snippet(result))
+        else:
+            result.append([])
 
     return result_docs
 
@@ -116,3 +176,32 @@ def levenshtein_distance(a: str, b: str) -> int:
         return levenshtein_distance(a[1:], b[1:])
     else:
         return 1 + min(levenshtein_distance(a[1:], b), levenshtein_distance(a, b[1:]), levenshtein_distance(a[1:], b[1:]))
+
+def search_snippet(result):
+    tokens = result[4]
+    NUM_TOKENS = len(tokens)
+    NUM_SNIPPETS = 5
+    CONTEXT_LENGTH = 5
+    snippets = []
+    for token in tokens:
+        content = match_extractor(result[0])(result[0])[result[1]] # Higher order filetype function -> read content -> filter page
+        matches = context_windows(content, token, CONTEXT_LENGTH)
+        if NUM_TOKENS <= NUM_SNIPPETS:
+            snippets.append(matches[:NUM_SNIPPETS//NUM_TOKENS])
+        else:
+            snippets.append(matches[0])
+    return snippets
+    
+
+def context_windows(text: str, word: str, n: int = 5):
+    """
+    Finds all occurrences of `word` and returns up to `n` words before and after each,
+    including punctuation.
+    """
+    pattern = (
+        rf'(?:\b\w+[^\s\w]*\s+){{0,{n}}}'
+        rf'\b{re.escape(word)}[^\s\w]*'  
+        rf'(?:\s+\w+[^\s\w]*){{0,{n}}}'  
+    )
+
+    return re.findall(pattern, text, flags=re.IGNORECASE)

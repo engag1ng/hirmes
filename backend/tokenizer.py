@@ -1,43 +1,5 @@
-import pymupdf
-import docx2txt
-from pptx import Presentation
 import re
 
-## File types
-def txt(file_path):
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        raw_content = f.read()
-    return [tokenize(raw_content)]
-
-def pdf(file_path):
-    pages = []
-    doc = pymupdf.open(file_path)
-    for page in doc:
-        text = page.get_text()
-        pages.append(tokenize(text))
-    return pages
-
-def docx(file_path):
-    return [tokenize(docx2txt.process(file_path))]
-
-def pptx(file_path):
-    prs = Presentation(file_path)
-    slides = []
-    for slide in prs.slides:
-        slide_text = ""
-        for shape in slide.shapes:
-            if hasattr(shape, "text"):
-                slide_text += shape.text+"\n"
-        slides.append(tokenize(slide_text))
-    return slides
-
-def markdown(file_path):
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        raw_content = f.read()
-    return [tokenize(raw_content)]
-
-
-## Tokenization   
 def tokenize(content):
     symbols_to_remove = ['%', '^', '&', '*', '~', '[', ']']
     table = str.maketrans('', '', ''.join(symbols_to_remove))
