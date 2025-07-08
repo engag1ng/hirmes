@@ -55,29 +55,49 @@
 
     </div>
     {% if search_results %}
-    <div>
-        <h2>Search Results</h2>
-        <table>
-            <tr>
-                <th>Path</th>
-                <th>Page</th>
-                <th>Match count</th>
-                <th>Total TF</th>
-                <th>Terms matched</th>
-                <th>Snippets</th>
-            </tr>
-            {% for item in search_results %}
-            <tr>
-                <td>{{ item[0] }}</td>
-                <td>{{ item[1] }}</td>
-                <td>{{ item[2] }}</td>
-                <td>{{ item[3] }}</td>
-                <td>{{ item[4] }}</td>
-                <td>{{ item[5] }}</td>
-            </tr>    
-            {% endfor %}
-        </table>
-    </div>
+    {% if search_results == "Error" %}
+        <script>
+            window.onload = function() {
+                showPopup("ERROR!\nPlease check your query. Always use AND, OR and NOT operators.");
+            };
+        </script>
+    {% else %}
+        <div>
+            <h2>Search Results</h2>
+            <table>
+                <tr>
+                    <th>Path</th>
+                    <th>Page</th>
+                    <th>Match count</th>
+                    <th>Total TF</th>
+                    <th>Terms matched</th>
+                    <th>Snippets</th>
+                </tr>
+                {% for item in search_results %}
+                <tr>
+                    <td>{{ item[0] }}</td>
+                    <td>{{ item[1] }}</td>
+                    <td>{{ item[2] }}</td>
+                    <td>{{ item[3] }}</td>
+                    <td>
+                        <ul>
+                        {% for term in item[4] %}
+                            <li>{{ term }}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                        {% for snippet in item[5] %}
+                            <li>{{ snippet }}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                </tr>    
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
     {% endif %}
     <!-- Popup structure -->
     <div class="popup-overlay" id="popupOverlay">

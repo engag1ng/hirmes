@@ -3,6 +3,8 @@ import dbm
 import pickle
 from backend.dictionary import dictionary
 from collections import defaultdict
+from backend.read import *
+import re
 
 db_path = 'backend/index.db'
 
@@ -76,8 +78,11 @@ def evaluate_rpn_ranked(rpn_tokens):
                         result = {k: v for k, v in all_docs.items() if k not in operand_keys}
 
                     else:
-                        right = stack.pop()
-                        left = stack.pop()
+                        try:
+                            right = stack.pop()
+                            left = stack.pop()
+                        except IndexError:
+                            return None
                         result = defaultdict(lambda: {"match_count": 0, "total_tf": 0})
 
                         if token == "AND":
@@ -107,12 +112,13 @@ def evaluate_rpn_ranked(rpn_tokens):
                     stack.append(doc_map)
 
             if len(stack) != 1:
+                return None
                 raise ValueError("Malformed RPN expression: leftover elements in stack")
 
             final_map = stack.pop()
 
             results = [
-                (path, page, data["match_count"], data["total_tf"], data["terms"])
+                [path, page, data["match_count"], data["total_tf"], data["terms"]]
                 for (path, page), data in final_map.items()
             ]
             results.sort(key=lambda x: (-x[2], -x[3]))
@@ -128,15 +134,18 @@ def search_index(query):
     spellchecked_query = spellcheck(tokenized_query)
     rpn = to_rpn(spellchecked_query)
     result_docs = evaluate_rpn_ranked(rpn)
-    for i, result in enumerate(result_docs):
-        if i < 5:
-            result.append(search_snippet(result))
-        else:
-            result.append([])
+    if result_docs:
+        for i, result in enumerate(result_docs):
+            if i < 5:
+                result.append(search_snippet(result))
+            else:
+                result.append([])
 
-    return result_docs
+        return result_docs
+    else:
+        return "Error" 
 
-LOGICAL_OPERATORS = {"AND", "NOT", "(", ")"}
+LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
 def spellcheck(query):
     dic = dictionary()
     for i, word in enumerate(query):
@@ -179,17 +188,24 @@ def levenshtein_distance(a: str, b: str) -> int:
 
 def search_snippet(result):
     tokens = result[4]
+    page_num = result[1]-1
     NUM_TOKENS = len(tokens)
     NUM_SNIPPETS = 5
     CONTEXT_LENGTH = 5
     snippets = []
     for token in tokens:
-        content = match_extractor(result[0])(result[0])[result[1]] # Higher order filetype function -> read content -> filter page
-        matches = context_windows(content, token, CONTEXT_LENGTH)
-        if NUM_TOKENS <= NUM_SNIPPETS:
-            snippets.append(matches[:NUM_SNIPPETS//NUM_TOKENS])
-        else:
-            snippets.append(matches[0])
+        try:
+            file_function = match_extractor(result[0])
+            raw_content = file_function(result[0])
+            content = raw_content[page_num] # Higher order filetype function -> read content -> filter page
+            matches = context_windows(content, token, CONTEXT_LENGTH)
+            if NUM_TOKENS <= NUM_SNIPPETS:
+                snippets += matches[:NUM_SNIPPETS//NUM_TOKENS]
+            else:
+                snippets += matches[0]
+        except FileNotFoundError:
+            snippets.append("File Not Found")
+            break
     return snippets
     
 

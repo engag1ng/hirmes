@@ -22,31 +22,31 @@ def match_extractor(path):
     else:
         return extractors[ext]
 
-def txt(file_path, tokenize: bool = False):
+def txt(file_path, is_tokenize: bool = False):
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
         raw_content = f.read()
-    if tokenize:
+    if is_tokenize:
         return [tokenize(raw_content)]
     return [raw_content]
 
-def pdf(file_path, tokenize: bool = False):
+def pdf(file_path, is_tokenize: bool = False):
     pages = []
     doc = pymupdf.open(file_path)
     for page in doc:
         text = page.get_text()
-        if tokenize:
+        if is_tokenize:
             pages.append(tokenize(text))
         else:
             pages.append(text)
     return pages
 
-def docx(file_path, tokenize: bool = False):
+def docx(file_path, is_tokenize: bool = False):
     raw_content = docx2txt.process(file_path)
-    if tokenize:
+    if is_tokenize:
         return [tokenize(raw_content)]
     return [raw_content]
 
-def pptx(file_path, tokenize: bool = False):
+def pptx(file_path, is_tokenize: bool = False):
     prs = Presentation(file_path)
     slides = []
     for slide in prs.slides:
@@ -54,15 +54,15 @@ def pptx(file_path, tokenize: bool = False):
         for shape in slide.shapes:
             if hasattr(shape, "text"):
                 slide_text += shape.text+"\n"
-        if tokenize:
+        if is_tokenize:
             slides.append(tokenize(slide_text))
         else:
             slides.append(slide_text)
     return slides
 
-def markdown(file_path, tokenize: bool = False):
+def markdown(file_path, is_tokenize: bool = False):
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
         raw_content = f.read()
-    if tokenize:
+    if is_tokenize:
         return [tokenize(raw_content)]
     return [raw_content]
