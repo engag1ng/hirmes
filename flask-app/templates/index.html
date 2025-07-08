@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Information Retrieval</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/popup.js') }}" defer></script>
+</head>
+<body>
+    <h1>Information Retrieval system</h1>
+    <button
+        type="button"
+        id="theme-toggle"
+        title="Toggle light/dark mode"
+        >🌞
+    </button>
+    <div style="display: flex; justify-content: space-around">
+        <div>
+            <h2>Indexer</h2>
+            <form method="POST" action="/indexing">
+                <label for="path">Path:</label>
+                <input type="text" id="path" name="path" required><br><br>
+
+                <input type="file" id="folderInput" webkitdirectory directory style="display: none;" />
+
+                <label>
+                    <input type="checkbox" name="recursive" {% if settings and settings.recursive %}checked{% endif %}>
+                    Include Subfolders
+                </label>
+                <label>
+                    <input type="checkbox" name="replace_filename" {% if settings and settings.replace_filename %}checked{% endif %}>
+                    Replace Entire Filename
+                </label><br><br>
+
+                <button type="submit">Index</button>
+            </form>
+        </div>
+
+        <div>
+            <h2>Search Files</h2>
+            <form action="/search" method="get">
+                <input type="text" name="query" placeholder="Search..." required>
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        {% if i %}
+            <script>
+                window.onload = function() {
+                    showPopup("Indexed {{ i }} file(s).");
+                };
+            </script>
+        {% endif %}
+
+    </div>
+    {% if search_results %}
+    {% if search_results == "Error" %}
+        <script>
+            window.onload = function() {
+                showPopup("ERROR!\nPlease check your query. Always use AND, OR and NOT operators.");
+            };
+        </script>
+    {% else %}
+        <div>
+            <h2>Search Results</h2>
+            <table>
+                <tr>
+                    <th>Path</th>
+                    <th>Page</th>
+                    <th>Match count</th>
+                    <th>Total TF</th>
+                    <th>Terms matched</th>
+                    <th>Snippets</th>
+                </tr>
+                {% for item in search_results %}
+                <tr>
+                    <td>{{ item[0] }}</td>
+                    <td>{{ item[1] }}</td>
+                    <td>{{ item[2] }}</td>
+                    <td>{{ item[3] }}</td>
+                    <td>
+                        <ul>
+                        {% for term in item[4] %}
+                            <li>{{ term }}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                        {% for snippet in item[5] %}
+                            <li>{{ snippet }}</li>
+                        {% endfor %}
+                        </ul>
+                    </td>
+                </tr>    
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
+    {% endif %}
+    <!-- Popup structure -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-box">
+            <p id="popupMessage">Hello!</p>
+            <button onclick="closePopup()">Close</button>
+        </div>
+    </div>
+</body>
+</html>
