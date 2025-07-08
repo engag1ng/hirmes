@@ -50,15 +50,24 @@ Windows: `run.bat`
 4. When you close the terminal, the web server closes and the service terminates. To restart the service simply return to Step 1.
 
 ## Documentation
-### Tokenizer
+### Indexing
 List of supported file types:
-- PDF files
+- PDF files \*
 - Word documents (.DOCX)
-- PowerPoint presentations (.PPTX)
+- PowerPoint presentations (.PPTX) \*
 - TXT files
 - Markdown files (.MD)
+
+\* Supports page-by-page indexing
+
 ### Querying
-The querying engine supports different search operators to refine your search. A full list can be found below:
+The querying engine supports different search operators to refine your search. 
+
+It is **necessary** to use operators when evaluating multiple search terms. For example "project management" will raise an error. Instead use either "project AND management" or "project OR management". This removes ambiguity, makes searches faster and more precise. To learn more about the search operators read the section below.
+
+Search results are ranked in the following order:
+1. Number of matching terms
+2. Sum of term frequencies for all matching terms
 
 **Paranthesis ()**:
 Paranthesis can be used to execute a certain portion of the query first and then further evaluate it later. Those familiar with algebra will recognise this from mathematic equations.
@@ -79,6 +88,16 @@ project AND management
 ```
 
 This will only return files that contain the words *project* and *management*.
+
+**OR Operator**:
+The OR operator returns all files, that contain one or the other search word.
+
+Example query:
+```
+management OR geography
+```
+
+This will return all files containing either *management* or *geography*.
 
 **NOT Operator**:
 The NOT operator disregards all files, that contain a certain search term.
