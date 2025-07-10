@@ -3,3 +3,4 @@ docx2txt
 python-pptx
 flask
 pyinstaller
+waitress

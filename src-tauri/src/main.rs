@@ -2,22 +2,36 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::process::{Command, Stdio};
-use std::env;
-use std::path::PathBuf;
+use std::{thread, time};
+use std::net::TcpStream;
+
+fn wait_for_flask_ready() {
+    let max_retries = 20;
+    let wait_time = time::Duration::from_millis(200);
+
+    for _ in 0..max_retries {
+        if TcpStream::connect("127.0.0.1:5000").is_ok() {
+            return;
+        }
+        thread::sleep(wait_time);
+    }
+
+    panic!("Flask backend failed to start on port 5000");
+}
 
 fn main() {
-    hirmes_lib::run();
-
-    let mut exe_path = std::env::current_exe().expect("Failed to get current exe path");
-    exe_path.pop();
-    exe_path.push("bin");
-    exe_path.push("app.exe");
-    Command::new(exe_path)
-        .stdout(Stdio::null())
-        .spawn()
-        .expect("Failed to start Flask App");
-
     tauri::Builder::default()
+        .setup(|_app| {
+            Command::new("bin/app.exe")
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .expect("Failed to launch backend");
+
+            wait_for_flask_ready(); // 🔁 Poll until server is ready
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

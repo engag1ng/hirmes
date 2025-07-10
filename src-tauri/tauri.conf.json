@@ -2,16 +2,17 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "hirmes",
   "version": "0.1.0",
-  "identifier": "com.hirmes.app",
+  "identifier": "app.hirmes",
   "build": {
-    "frontendDist": "../src"
+    "frontendDist": "../src",
+    "beforeBuildCommand": "build-flask.bat"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "hirmes",
-	"url": "http://localhost:5000",
+        "title": "Hirmes",
+	"url": "http://127.0.0.1:5000",
         "width": 800,
         "height": 600
       }

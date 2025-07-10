@@ -1,30 +1,37 @@
-import dbm
-import pickle
 import os
 import datetime
 from backend.dictionary import add_dictionary
 from backend.read import *
+import sqlite3
 
-db_path = 'backend/index.db'
-ignore_list = ["app.py", ".git", "backend", "LICENSE", "README.md", "requirements.txt", ".venv", ".gitignore"]
+db_path = 'index.db'
 
 def index_files(paths):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
     for path in paths:
         pages = match_extractor(path)(path, True)
 
-        with dbm.open(db_path, 'c') as db:
-            for i, tokens in enumerate(pages):
-                for token in tokens:
-                    key = token[0].encode()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS postings (
+                token TEXT,
+                path TEXT,
+                page INTEGER,
+                tf INTEGER
+            )
+        ''')
 
-                    if key in db:
-                        postings = pickle.loads(db[key])
-                        postings.append([path,i+1,token[1]]) # (Path, Page, Term frequency, Snippet?)
-                        db[key] = pickle.dumps(postings)
-                    else:
-                        db[key] = pickle.dumps([[path,i+1,token[1]]])
-                    
-                    add_dictionary(token[0])
+        for i, tokens in enumerate(pages):
+            for token in tokens:
+                cur.execute('''
+                    INSERT INTO postings (token, path, page, tf)
+                    VALUES (?, ?, ?, ?)
+                ''', (token[0], path, i + 1, token[1]))
+                add_dictionary(token[0])
+
+    conn.commit()
+    conn.close()
+
 
 def get_files_without_id(path, is_recursive):
     i = 0
@@ -37,15 +44,14 @@ def get_files_without_id(path, is_recursive):
 
     for entry in entries:
         full_path = os.path.join(path, entry)
-        if entry not in ignore_list:
-            if os.path.isdir(full_path) and is_recursive:
-                additional_i, additional_without_id = get_files_without_id(full_path, is_recursive)
-                i += additional_i
-                without_id += additional_without_id
-            elif os.path.isfile(full_path):
-                if "★" not in entry:
-                    without_id.append(full_path)
-                    i += 1
+        if os.path.isdir(full_path) and is_recursive:
+            additional_i, additional_without_id = get_files_without_id(full_path, is_recursive)
+            i += additional_i
+            without_id += additional_without_id
+        elif os.path.isfile(full_path):
+            if "★" not in entry:
+                without_id.append(full_path)
+                i += 1
 
     return i, without_id
 

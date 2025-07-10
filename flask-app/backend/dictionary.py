@@ -1,4 +1,5 @@
-dict_path = "backend/dictionary.txt"
+dict_path = "dictionary.txt"
+
 def dictionary():
     with open(dict_path, "a+", encoding="utf-8") as file:
         file.seek(0)

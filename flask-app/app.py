@@ -50,7 +50,7 @@ def search():
     query = request.args.get('query')
     results = search_index(query)
     return render_index_html(search_results=results)
-
+    
 if __name__ == '__main__':
-    webbrowser.open("http://127.0.0.1:5000")
-    app.run(port=5000)
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=5000)

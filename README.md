@@ -1,12 +1,25 @@
+# Hirmes
 > **created by engag1ng**
 
 <img src="https://github.com/user-attachments/assets/96a0beba-dc51-4a47-8a13-0f4801b08dbc" width="75%" height="75%">
 
-A web-based IR sytem for indexing, searching and assigning ID's to files.
+A local IR sytem for indexing, searching and assigning ID's to files.
+Powered by:
+
+<div align="center">
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/python.png" alt="Python" title="Python"/></code>
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/flask.png" alt="Flask" title="Flask"/></code>
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/javascript.png" alt="JavaScript" title="JavaScript"/></code>
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/html.png" alt="HTML" title="HTML"/></code>
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/css.png" alt="CSS" title="CSS"/></code>
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/rust.png" alt="Rust" title="Rust"/></code>
+	<code><img width="50" src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/npm.png" alt="npm" title="npm"/></code>
+</div>
 
 **⭐Please star this repository!**
 ## Getting started
 This is a simple step-by-step guide on how to use this program.
+
 ### Prerequisites
 - Python3 (tested on Python 3.13)
   - Visit https://www.python.org/downloads/ and download the latest version of Python3
@@ -14,40 +27,35 @@ This is a simple step-by-step guide on how to use this program.
 > Make sure to check `Add to PATH` when installing!
   
 ### Installation
-1. Download the project files:
+1. Clone the project files:
 
-  - 1.1 Click the green *Code* button on top of the page and then click *Download Zip* (recommended)
-  <img src="https://github.com/user-attachments/assets/1df8bd00-9800-4365-959a-e781238330fa" width="75%" height="75%">
-  
-  - 1.2 `git clone https://github.com/engag1ng/hirmes.git` (for advanced users)
-2. Move the **ENTIRE** folder to your desired location
-3. Open a command line in that folder. On Windows you can do so by right clicking into the folder and 'Open In Terminal'
-4. Run the following commands:
 ```cmd
+git clone https://github.com/engag1ng/hirmes.git
+```
+2. Open a command line in the project root.
+3. Run the following commands:
+
+```cmd
+cd flask-app
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 ``` 
+
+### Build
+In `/`
+```cmd
+npm run tauri build
+```
+
+Result can be found in `src-tauri/target/release/`.
+
 ### Usage
-1. Execute the appropiate run script.
-
-Windows: `run.bat`
-
-2. Index files
-
-2.1 Select the source folder that contains the files you would like to index.
-
-2.2 Select your preferred settings using the checkboxes
-
-2.3 Click **Index** and wait. The page will reload, when the indexing process is done.
-
-3. Search files
-
-3.1 Enter your search query. [Read more](#querying)
-
-3.2 Click **Search**.
-
-4. When you close the terminal, the web server closes and the service terminates. To restart the service simply return to Step 1.
+1. Execute `hirmes.exe`.
+2. Select the source folder that contains the files you would like to index.
+3. Select your preferred settings using the checkboxes
+4. Click **Index** and wait. A message will be displayed, when the indexing process is done.
+5. Enter your search query and click **Search**. [Read more](#querying)
 
 ## Documentation
 ### Indexing

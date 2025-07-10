@@ -1,4 +1,7 @@
 import re
+from backend.system import get_resource_path
+
+stoplist_path = get_resource_path("backend/stoplist.txt") 
 
 def tokenize(content):
     symbols_to_remove = ['%', '^', '&', '*', '~', '[', ']']
@@ -61,7 +64,7 @@ def tokenize(content):
     return sorted(freq_dict.items(), key=lambda x: x[1])
 
 def stop_list():
-    with open("backend/stop_list.txt", 'r', encoding="utf-8") as file:
+    with open(stoplist_path, 'r', encoding="utf-8") as file:
         return file.read().split("\n")
 
 LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}

@@ -1,12 +1,11 @@
 from backend.tokenizer import tokenize, tokenize_query
-import dbm
-import pickle
 from backend.dictionary import dictionary
 from collections import defaultdict
 from backend.read import *
 import re
+import sqlite3
 
-db_path = 'backend/index.db'
+db_path = 'index.db'
 
 def is_operator(token):
     return token in {"AND", "OR", "NOT"}
@@ -61,72 +60,79 @@ def evaluate_rpn_ranked(rpn_tokens):
     Ranking is based on number of terms matched, then total term frequency.
     """
     try:
-        with dbm.open(db_path, 'r') as db:
-            stack = []
-            for token in rpn_tokens:
-                if is_operator(token):
-                    if token == "NOT":
-                        operand = stack.pop()
-                        operand_keys = set(operand.keys())
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
 
-                        all_docs = defaultdict(lambda: {"match_count": 0, "total_tf": 0})
-                        for key in db.keys():
-                            entries = pickle.loads(db[key])
-                            for path, page, tf in entries:
-                                all_docs[(path, page)]["total_tf"] += 0
+        stack = []
+        for token in rpn_tokens:
+            if is_operator(token):
+                if token == "NOT":
+                    operand = stack.pop()
+                    operand_keys = set(operand.keys())
 
-                        result = {k: v for k, v in all_docs.items() if k not in operand_keys}
+                    all_docs = defaultdict(lambda: {"match_count": 0, "total_tf": 0})
+                    cur.execute("SELECT DISTINCT path, page FROM postings")
+                    for path, page in cur.fetchall():
+                        all_docs[(path, page)]
 
-                    else:
-                        try:
-                            right = stack.pop()
-                            left = stack.pop()
-                        except IndexError:
-                            return None
-                        result = defaultdict(lambda: {"match_count": 0, "total_tf": 0})
-
-                        if token == "AND":
-                            common_keys = left.keys() & right.keys()
-                            for key in common_keys:
-                                result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
-                                result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
-                                result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
-                        elif token == "OR":
-                            all_keys = left.keys() | right.keys()
-                            for key in all_keys:
-                                result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
-                                result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
-                                result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+                    result = {k: v for k, v in all_docs.items() if k not in operand_keys}
                     stack.append(result)
 
                 else:
-                    doc_map = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set()})
                     try:
-                        entries = pickle.loads(db[token.encode()])
-                        for path, page, tf in entries:
-                            doc_map[(path, page)]["match_count"] += 1
-                            doc_map[(path, page)]["total_tf"] += tf
-                            doc_map[(path, page)]["terms"].add(token)
-                    except KeyError:
-                        pass 
-                    stack.append(doc_map)
+                        right = stack.pop()
+                        left = stack.pop()
+                    except IndexError:
+                        return None
 
-            if len(stack) != 1:
-                return None
-                raise ValueError("Malformed RPN expression: leftover elements in stack")
+                    result = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set()})
 
-            final_map = stack.pop()
+                    if token == "AND":
+                        common_keys = left.keys() & right.keys()
+                        for key in common_keys:
+                            result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
+                            result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
+                            result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+                    elif token == "OR":
+                        all_keys = left.keys() | right.keys()
+                        for key in all_keys:
+                            result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
+                            result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
+                            result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+                    stack.append(result)
 
-            results = [
-                [path, page, data["match_count"], data["total_tf"], data["terms"]]
-                for (path, page), data in final_map.items()
-            ]
-            results.sort(key=lambda x: (-x[2], -x[3]))
+            else:
+                doc_map = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set()})
 
-            return results
+                cur.execute('''
+                    SELECT path, page, tf FROM postings
+                    WHERE token = ?
+                ''', (token,))
+                rows = cur.fetchall()
+                for path, page, tf in rows:
+                    doc_map[(path, page)]["match_count"] += 1
+                    doc_map[(path, page)]["total_tf"] += tf
+                    doc_map[(path, page)]["terms"].add(token)
 
-    except dbm.error:
-        print("You have not indexed any documents yet, or the database could not be found.")
+                stack.append(doc_map)
+
+        conn.close()
+
+        if len(stack) != 1:
+            return None
+
+        final_map = stack.pop()
+
+        results = [
+            [path, page, data["match_count"], data["total_tf"], data["terms"]]
+            for (path, page), data in final_map.items()
+        ]
+        results.sort(key=lambda x: (-x[2], -x[3]))
+
+        return results
+
+    except sqlite3.Error as e:
+        print(f"SQLite error: {e}")
         return []
 
 def search_index(query):
