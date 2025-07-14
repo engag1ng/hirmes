@@ -1,7 +1,7 @@
 # Hirmes
 > **created by engag1ng**
 
-<img src="https://github.com/user-attachments/assets/96a0beba-dc51-4a47-8a13-0f4801b08dbc" width="75%" height="75%">
+<img width="75%" alt="image" src="https://github.com/user-attachments/assets/c023c8f4-7f45-45a6-8a12-a6bdf3fd2a35" />
 
 A local IR sytem for indexing, searching and assigning ID's to files.
 Powered by:
