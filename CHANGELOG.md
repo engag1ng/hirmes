@@ -1,4 +1,4 @@
-# 0.1.0-beta (2025-07-11)
+# 0.1.0-beta (2025-07-14)
 ## Added
 * Query spellcheck using levenshtein distance
 * Search result ranking
