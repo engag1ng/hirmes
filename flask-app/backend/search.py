@@ -137,7 +137,7 @@ def evaluate_rpn_ranked(rpn_tokens):
 
 def search_index(query):
     tokenized_query = tokenize_query(query)
-    spellchecked_query = spellcheck(tokenized_query)
+    spellchecked_query = spellcheck(tokenized_query, dictionary())
     rpn = to_rpn(spellchecked_query)
     result_docs = evaluate_rpn_ranked(rpn)
     if result_docs:
@@ -152,26 +152,19 @@ def search_index(query):
         return "Error" 
 
 LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
-def spellcheck(query):
-    dic = dictionary()
+def spellcheck(query, dic):
     for i, word in enumerate(query):
         if word not in LOGICAL_OPERATORS:
             min_distance = float('inf')
             MAX_DISTANCE = max(1, len(word) // 3)
-            ACCEPT_DISTANCE = max(1, len(word) // 4)
             closest_entry = None
-            for entry in dic:
-                if not entry:
-                    continue
-                if entry == word:
-                    break
-                if entry[0] != word[0]:
+            same_first_letter = [entry for entry in dic if entry[0] == word[0] and abs(len(entry) - len(word)) < MAX_DISTANCE]
+            if word in same_first_letter:
+                continue
+            for entry in same_first_letter:
+                if not entry: # Just security so empty lines in dictionary don't cause error
                     continue
                 dist = levenshtein_distance(word, entry)
-                if dist <= ACCEPT_DISTANCE:
-                    min_distance = 0
-                    closest_entry = entry
-                    break
                 if dist < min_distance:
                     min_distance = dist
                     closest_entry = entry 
