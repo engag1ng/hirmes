@@ -6,7 +6,10 @@ import sqlite3
 from importlib.resources import files
 from symspellpy import SymSpell, Verbosity
 
-db_path = 'index.db'
+app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(app_folder, exist_ok=True)
+
+db_path = os.path.join(app_folder, "index.db")
 
 def is_operator(token):
     return token in {"AND", "OR", "NOT"}
@@ -160,9 +163,6 @@ def spellcheck(query, dictionary_path, bigram_path):
     sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
     sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
     suggestions = sym_spell.lookup_compound(query, max_edit_distance=2)
-
-    for suggestion in suggestions:
-        print(suggestion)
 
     return suggestions[0]
 

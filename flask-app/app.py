@@ -6,7 +6,10 @@ import json
 import os
 from random import randint
 
-SETTINGS_FILE = 'config.json'
+app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(app_folder, exist_ok=True)
+
+SETTINGS_FILE = os.path.join(app_folder, "config.json")
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):

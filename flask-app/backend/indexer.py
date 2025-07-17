@@ -3,7 +3,10 @@ import datetime
 from backend.read import *
 import sqlite3
 
-db_path = 'index.db'
+app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(app_folder, exist_ok=True)
+
+db_path = os.path.join(app_folder, "index.db")
 
 def index_files(paths):
     conn = sqlite3.connect(db_path)
