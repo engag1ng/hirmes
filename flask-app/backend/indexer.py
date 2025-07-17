@@ -1,6 +1,5 @@
 import os
 import datetime
-from backend.dictionary import add_dictionary
 from backend.read import *
 import sqlite3
 
@@ -27,7 +26,6 @@ def index_files(paths):
                     INSERT INTO postings (token, path, page, tf)
                     VALUES (?, ?, ?, ?)
                 ''', (token[0], path, i + 1, token[1]))
-                add_dictionary(token[0])
 
     conn.commit()
     conn.close()
