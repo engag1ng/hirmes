@@ -5,6 +5,7 @@ import re
 import sqlite3
 from importlib.resources import files
 from symspellpy import SymSpell, Verbosity
+import os
 
 app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(app_folder, exist_ok=True)
@@ -143,16 +144,20 @@ def search_index(query):
     dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
     bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
     spellchecked_query = spellcheck(query, dictionary_path, bigram_path)
+    print("spellchecked")
     tokenized_query = tokenize_query(spellchecked_query)
+    print("tokenized")
     rpn = to_rpn(tokenized_query)
+    print("rpn'd")
     result_docs = evaluate_rpn_ranked(rpn)
+    print("eval")
     if result_docs:
         for i, result in enumerate(result_docs):
             if i < 5:
                 result.append(search_snippet(result))
             else:
                 result.append([])
-
+        print("Snippets searched")
         return result_docs
     else:
         return "Error" 
