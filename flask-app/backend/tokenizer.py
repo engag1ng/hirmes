@@ -60,7 +60,6 @@ def tokenize(content):
             freq_dict[token] += 1
         else:
             freq_dict[token] = 1
-
     return sorted(freq_dict.items(), key=lambda x: x[1])
 
 def stop_list():

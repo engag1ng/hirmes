@@ -129,7 +129,7 @@ def evaluate_rpn_ranked(rpn_tokens):
         final_map = stack.pop()
 
         results = [
-            [path, page, data["match_count"], data["total_tf"], data["terms"]]
+            [path, page, data["match_count"], data["total_tf"], list(data["terms"])]
             for (path, page), data in final_map.items()
         ]
         results.sort(key=lambda x: (-x[2], -x[3]))
@@ -143,21 +143,16 @@ def evaluate_rpn_ranked(rpn_tokens):
 def search_index(query):
     dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
     bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
-    spellchecked_query = spellcheck(query, dictionary_path, bigram_path)
-    print("spellchecked")
+    spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
     tokenized_query = tokenize_query(spellchecked_query)
-    print("tokenized")
     rpn = to_rpn(tokenized_query)
-    print("rpn'd")
     result_docs = evaluate_rpn_ranked(rpn)
-    print("eval")
     if result_docs:
         for i, result in enumerate(result_docs):
             if i < 5:
                 result.append(search_snippet(result))
             else:
                 result.append([])
-        print("Snippets searched")
         return result_docs
     else:
         return "Error" 
