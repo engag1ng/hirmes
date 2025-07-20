@@ -13,14 +13,14 @@ os.makedirs(app_folder, exist_ok=True)
 db_path = os.path.join(app_folder, "index.db")
 
 def is_operator(token):
-    return token in {"AND", "OR", "NOT"}
+    return token in {"and", "or", "not"}
 
 precedence = {
-    "NOT": 3,
-    "AND": 2,
-    "OR": 1
+    "not": 3,
+    "and": 2,
+    "or": 1
 }
-right_associative = {"NOT"}
+right_associative = {"not"}
 
 def to_rpn(tokens):
     """Converts infix Boolean expression to RPN (postfix) using the Shunting Yard algorithm."""
@@ -71,7 +71,7 @@ def evaluate_rpn_ranked(rpn_tokens):
         stack = []
         for token in rpn_tokens:
             if is_operator(token):
-                if token == "NOT":
+                if token == "not":
                     operand = stack.pop()
                     operand_keys = set(operand.keys())
 
@@ -92,13 +92,13 @@ def evaluate_rpn_ranked(rpn_tokens):
 
                     result = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set()})
 
-                    if token == "AND":
+                    if token == "and":
                         common_keys = left.keys() & right.keys()
                         for key in common_keys:
                             result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
                             result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
                             result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
-                    elif token == "OR":
+                    elif token == "or":
                         all_keys = left.keys() | right.keys()
                         for key in all_keys:
                             result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
