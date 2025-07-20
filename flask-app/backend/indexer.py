@@ -1,10 +1,12 @@
 import os
 import datetime
-from backend.dictionary import add_dictionary
 from backend.read import *
 import sqlite3
 
-db_path = 'index.db'
+app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(app_folder, exist_ok=True)
+
+db_path = os.path.join(app_folder, "index.db")
 
 def index_files(paths):
     conn = sqlite3.connect(db_path)
@@ -27,7 +29,6 @@ def index_files(paths):
                     INSERT INTO postings (token, path, page, tf)
                     VALUES (?, ?, ?, ?)
                 ''', (token[0], path, i + 1, token[1]))
-                add_dictionary(token[0])
 
     conn.commit()
     conn.close()

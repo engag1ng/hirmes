@@ -4,3 +4,6 @@ python-pptx
 flask
 pyinstaller
 waitress
+pytest
+requests
+pytest-benchmark

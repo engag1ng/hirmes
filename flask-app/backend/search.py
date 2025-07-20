@@ -1,11 +1,16 @@
 from backend.tokenizer import tokenize, tokenize_query
-from backend.dictionary import dictionary
 from collections import defaultdict
 from backend.read import *
 import re
 import sqlite3
+from importlib.resources import files
+from symspellpy import SymSpell, Verbosity
+import os
 
-db_path = 'index.db'
+app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(app_folder, exist_ok=True)
+
+db_path = os.path.join(app_folder, "index.db")
 
 def is_operator(token):
     return token in {"AND", "OR", "NOT"}
@@ -124,7 +129,7 @@ def evaluate_rpn_ranked(rpn_tokens):
         final_map = stack.pop()
 
         results = [
-            [path, page, data["match_count"], data["total_tf"], data["terms"]]
+            [path, page, data["match_count"], data["total_tf"], list(data["terms"])]
             for (path, page), data in final_map.items()
         ]
         results.sort(key=lambda x: (-x[2], -x[3]))
@@ -136,9 +141,11 @@ def evaluate_rpn_ranked(rpn_tokens):
         return []
 
 def search_index(query):
-    tokenized_query = tokenize_query(query)
-    spellchecked_query = spellcheck(tokenized_query)
-    rpn = to_rpn(spellchecked_query)
+    dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
+    bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
+    spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
+    tokenized_query = tokenize_query(spellchecked_query)
+    rpn = to_rpn(tokenized_query)
     result_docs = evaluate_rpn_ranked(rpn)
     if result_docs:
         for i, result in enumerate(result_docs):
@@ -146,51 +153,18 @@ def search_index(query):
                 result.append(search_snippet(result))
             else:
                 result.append([])
-
         return result_docs
     else:
         return "Error" 
 
 LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
-def spellcheck(query):
-    dic = dictionary()
-    for i, word in enumerate(query):
-        if word not in LOGICAL_OPERATORS:
-            min_distance = float('inf')
-            MAX_DISTANCE = max(1, len(word) // 3)
-            ACCEPT_DISTANCE = max(1, len(word) // 4)
-            closest_entry = None
-            for entry in dic:
-                if not entry:
-                    continue
-                if entry == word:
-                    break
-                if entry[0] != word[0]:
-                    continue
-                dist = levenshtein_distance(word, entry)
-                if dist <= ACCEPT_DISTANCE:
-                    min_distance = 0
-                    closest_entry = entry
-                    break
-                if dist < min_distance:
-                    min_distance = dist
-                    closest_entry = entry 
+def spellcheck(query, dictionary_path, bigram_path):
+    sym_spell = SymSpell()
+    sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
+    sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
+    suggestions = sym_spell.lookup_compound(query, max_edit_distance=2)
 
-            if min_distance <= MAX_DISTANCE:
-                query[i] = closest_entry
-    return query
-
-def levenshtein_distance(a: str, b: str) -> int:
-    len_a = len(a)
-    len_b = len(b)
-    if len_b == 0:
-        return len_a
-    elif len_a == 0:
-        return len_b
-    elif a[0] == b[0]:
-        return levenshtein_distance(a[1:], b[1:])
-    else:
-        return 1 + min(levenshtein_distance(a[1:], b), levenshtein_distance(a, b[1:]), levenshtein_distance(a[1:], b[1:]))
+    return suggestions[0]
 
 def search_snippet(result):
     tokens = result[4]

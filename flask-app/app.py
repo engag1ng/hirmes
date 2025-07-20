@@ -1,12 +1,13 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from backend.indexer import *
 from backend.search import search_index
-import webbrowser
 import json
 import os
-from random import randint
 
-SETTINGS_FILE = 'config.json'
+app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(app_folder, exist_ok=True)
+
+SETTINGS_FILE = os.path.join(app_folder, "config.json")
 
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
@@ -18,21 +19,19 @@ def save_settings(settings):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f)
 
-def render_index_html(i=None, search_results=None):
-    settings = load_settings()
-    return render_template('index.html', i=i, search_results=search_results, settings=settings)
-
 app = Flask(__name__)
 
 @app.route('/')
 def index_html():
-    return render_index_html()
+    settings = load_settings()
+    return render_template('index.html', settings=settings)
 
 @app.route('/indexing', methods=['POST'])
-def indexing():
-    path = request.form.get('path')
-    recursive = 'recursive' in request.form
-    replace_filename = 'replace_filename' in request.form
+def api_indexing():
+    data = request.json
+    path = data.get('path')
+    recursive = data.get('recursive', False)
+    replace_filename = data.get('replace_filename', False)
 
     save_settings({
         "recursive": recursive,
@@ -43,13 +42,16 @@ def indexing():
     with_id = assign_id(replace_filename, without_id)
     index_files(with_id)
 
-    return render_index_html(i=i)
+    return jsonify({"indexed_count": i})
 
 @app.route('/search', methods=['GET'])
-def search():
+def api_search():
     query = request.args.get('query')
-    results = search_index(query)
-    return render_index_html(search_results=results)
+    try:
+        results = search_index(query)
+        return jsonify({"results": results})
+    except Exception as e:
+        return jsonify({"error": "Invalid query format."}), 400
     
 if __name__ == '__main__':
     from waitress import serve
