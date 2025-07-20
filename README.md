@@ -116,7 +116,7 @@ management NOT geography
 This will return all files that contain *management* but not *geography*.
 
 ## License
-This project is licensed under the MIT license! To learn more please visit https://opensource.org/license/mit 
+This project is licensed under a custom license! Please read the LICENSE file. 
 
 ## Contributing
 If you have any recommendations, issues or improvements, please open an issue or pull request. Thank you!
