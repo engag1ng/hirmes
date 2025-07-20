@@ -1,3 +1,14 @@
+# 0.1.0-beta.2 (2025-07-20)
+## Added
+* Security clean-up script
+* Pytest for spellcheck
+## Changed
+* Spellcheck now via symspellpy
+* Program files moved to "AppData/Roaming/Hirmes"
+* Ajax instead of page reload when searching or indexing
+## Removed
+* Custom dictionary
+
 # 0.1.0-beta (2025-07-14)
 ## Added
 * Query spellcheck using levenshtein distance
