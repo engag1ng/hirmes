@@ -3,6 +3,9 @@ from backend.indexer import *
 from backend.search import search_index
 import json
 import os
+import threading
+import signal
+import sys
 
 app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(app_folder, exist_ok=True)
@@ -20,6 +23,7 @@ def save_settings(settings):
         json.dump(settings, f)
 
 app = Flask(__name__)
+server = None
 
 @app.route('/')
 def index_html():
@@ -44,7 +48,7 @@ def api_indexing():
 
     return jsonify({"indexed_count": i})
 
-@app.route('/search', methods=['GET'])
+@app.route('/search', methods=['POST'])
 def api_search():
     query = request.args.get('query')
     try:
@@ -52,7 +56,21 @@ def api_search():
         return jsonify({"results": results})
     except Exception as e:
         return jsonify({"error": "Invalid query format."}), 400
+
+@app.route('/shutdown', methods=["GET"])
+def shutdown():
+    def shutdown_server():
+        print("Shutting down server...")
+        server.close()
+        sys.exit(0)
+    
+    threading.Thread(target=shutdown_server).start()
+    return jsonify({"message": "Sever is shutting down"}), 200
+
+def run_server():
+    global server
+    server = create_server(app, host="127.0.0.1", port=5000)
+    server.run()
     
 if __name__ == '__main__':
-    from waitress import serve
-    serve(app, host='127.0.0.1', port=5000)
+    run_server()

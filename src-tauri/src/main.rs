@@ -1,4 +1,3 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::process::{Command, Stdio};
@@ -19,6 +18,22 @@ fn wait_for_flask_ready() {
     panic!("Flask backend failed to start on port 5000");
 }
 
+fn send_shutdown_signal() {
+    let client = reqwest::blocking::Client::new();
+    let result = client
+        .post("http://127.0.0.1:5000/shutdown")
+        .send();
+
+    match result {
+        Ok(response) => {
+            println!("Shutdown request sent: {}", response.status());
+        }
+        Err(e) => {
+            eprintln!("Failed to send shutdown request: {}", e);
+        }
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|_app| {
@@ -28,9 +43,15 @@ fn main() {
                 .spawn()
                 .expect("Failed to launch backend");
 
-            wait_for_flask_ready(); // 🔁 Poll until server is ready
+            wait_for_flask_ready();
 
             Ok(())
+        })
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event.event() {
+                // This triggers BEFORE the window closes
+                send_shutdown_signal();
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
