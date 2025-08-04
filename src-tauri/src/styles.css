@@ -1,0 +1,97 @@
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+:root[data-theme="light"] {
+  --bg-dark: oklch(0.92 0.005 235);
+  --bg: oklch(0.96 0.005 235);
+  --bg-light: oklch(1 0.005 235);
+  --text: oklch(0.15 0.01 235);
+  --text-muted: oklch(0.4 0.01 235);
+  --highlight: oklch(1 0.01 235);
+  --border: oklch(0.6 0.01 235);
+  --border-muted: oklch(0.7 0.01 235);
+  --primary: oklch(0.68 0.1 235);
+  --secondary: oklch(0.69 0.09583 300);
+}
+:root[data-theme="dark"] {
+  --bg-dark: oklch(0.1 0.005 235);
+  --bg: oklch(0.15 0.005 235);
+  --bg-light: oklch(0.2 0.005 235);
+  --text: oklch(0.96 0.01 235);
+  --text-muted: oklch(0.76 0.01 235);
+  --highlight: oklch(0.5 0.01 235);
+  --border: oklch(0.4 0.01 235);
+  --border-muted: oklch(0.3 0.01 235);
+  --primary: oklch(0.43 0.1 235);
+  --secondary: oklch(0.43 0.1 300);
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-muted);
+}
+
+div {
+  background-color: var(--bg);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-top: 20px;
+}
+
+button {
+  background-color: var(--bg-light);
+  color: var(--text);
+  border: none;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+}
+
+h1 {
+  font-size: 89.76px;
+  color: var(--text);
+  background: linear-gradient(to right ,var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h2 {
+  font-size: 67.34px;
+  color: var(--text)
+}
+
+h3 {
+  font-size: 50.52px;
+  color: var(--text-muted);
+}
+
+input {
+  border-radius: 10px;
+}
+
+p {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+table {
+  width: 100%;
+  background-color: var(--bg-light);
+}
+
+td {
+  text-align: center;
+  padding: 5px;
+  border-bottom: 1px solid var(--primary);
+  color: var(--text-muted);
+}
+
+th {
+  border-bottom: 1px solid var(--primary);
+  background-color: var(--primary);
+  color: var(--text);
+}
+
+ tr:nth-child(even) {background-color: var(--bg);} 

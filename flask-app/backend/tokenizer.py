@@ -77,7 +77,11 @@ def tokenize_query(query):
         if token in LOGICAL_OPERATORS:
             processed_tokens.append(token)
         else:
-            term_tokens = tokenize(token.lower())[0][0]
+            tokenized = tokenize(token.lower())
+            if tokenized:
+                term_tokens = tokenized[0][0]
+            else:
+                term_tokens = ''
             processed_tokens.append(term_tokens)
 
     return processed_tokens

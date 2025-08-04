@@ -6,6 +6,7 @@ import os
 import threading
 import signal
 import sys
+from waitress import create_server
 
 app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(app_folder, exist_ok=True)
@@ -48,7 +49,7 @@ def api_indexing():
 
     return jsonify({"indexed_count": i})
 
-@app.route('/search', methods=['POST'])
+@app.route('/search', methods=['GET'])
 def api_search():
     query = request.args.get('query')
     try:

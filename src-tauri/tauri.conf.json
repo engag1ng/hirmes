@@ -1,38 +1,54 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "hirmes",
-  "version": "0.1.0",
-  "identifier": "app.hirmes",
-  "build": {
-    "frontendDist": "../src",
-    "beforeBuildCommand": "build-flask.bat"
+  "$schema": "https://schema.tauri.app/config/1",
+  "package": {
+    "productName": "hirmes",
+    "version": "0.1.1-beta"
   },
-  "app": {
-    "withGlobalTauri": true,
-    "windows": [
-      {
-        "title": "Hirmes",
-	"url": "http://127.0.0.1:5000",
-        "width": 800,
-        "height": 600
-      }
-    ],
+  "build": {
+    "distDir": "../src",
+    "beforeBuildCommand": "build-flask.bat",
+    "withGlobalTauri": true
+  },
+  "tauri": {
+    "bundle": {
+      "identifier": "app.hirmes",
+      "active": true,
+      "targets": "all",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "resources": [
+        "bin/app.exe"
+      ]
+    },
     "security": {
       "csp": null
-    }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "resources": [
-      "bin/app.exe"
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "Hirmes",
+        "url": "http://127.0.0.1:5000",
+        "width": 800,
+        "height": 600,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "width": 400,
+        "height": 200,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "fullscreen": false,
+        "url": "splashscreen.html",
+        "visible": true
+      }
     ]
   }
 }
