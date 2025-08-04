@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
-from backend.indexer import *
-from backend.search import search_index
+from backend.indexer import fn_index_path
+from backend.search import fn_search_index
 import json
 import os
 import threading
@@ -38,22 +38,20 @@ def api_indexing():
     recursive = data.get('recursive', False)
     replace_filename = data.get('replace_filename', False)
 
+    number_indexed = fn_index(path, recursive, replace_filename)
+
     save_settings({
         "recursive": recursive,
         "replace_filename": replace_filename
     })
 
-    i, without_id = get_files_without_id(path, recursive)
-    with_id = assign_id(replace_filename, without_id)
-    index_files(with_id)
-
-    return jsonify({"indexed_count": i})
+    return jsonify({"indexed_count": number_indexed})
 
 @app.route('/search', methods=['GET'])
 def api_search():
     query = request.args.get('query')
     try:
-        results = search_index(query)
+        results = fn_search_index(query)
         return jsonify({"results": results})
     except Exception as e:
         return jsonify({"error": "Invalid query format."}), 400

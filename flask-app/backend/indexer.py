@@ -8,6 +8,12 @@ os.makedirs(app_folder, exist_ok=True)
 
 db_path = os.path.join(app_folder, "index.db")
 
+def fn_index_path(path, recursive, full):
+    i, without_id = get_files_without_id(path, recursive)
+    with_id = assign_id(without_id, replace_filename)
+    index_files(with_id)
+    return i
+
 def index_files(paths):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
@@ -56,7 +62,7 @@ def get_files_without_id(path, is_recursive):
 
     return i, without_id
 
-def assign_id(is_replace_full, without_id):
+def assign_id(without_id, is_replace_full):
     with_id = []
     for file in without_id:
         ID = datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")

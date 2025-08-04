@@ -140,7 +140,7 @@ def evaluate_rpn_ranked(rpn_tokens):
         print(f"SQLite error: {e}")
         return []
 
-def search_index(query):
+def fn_search_index(query):
     dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
     bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
     spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
