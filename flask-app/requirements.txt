@@ -7,3 +7,4 @@ waitress
 pytest
 requests
 pytest-benchmark
+pytest-profiling

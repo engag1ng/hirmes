@@ -1,70 +1,56 @@
 import re
 from backend.system import get_resource_path
+from collections import Counter
 
-stoplist_path = get_resource_path("backend/stoplist.txt") 
+def return_stop_list():
+    with open(stoplist_path, 'r', encoding="utf-8") as file:
+        return set(file.read().split("\n"))
+
+stoplist_path = get_resource_path("backend/stoplist.txt")
+stoplist = return_stop_list()
 
 def tokenize(content):
-    symbols_to_remove = ['%', '^', '&', '*', '~', '[', ']']
-    table = str.maketrans('', '', ''.join(symbols_to_remove))
-    cleaned_text = content.translate(table)
+    content = re.sub(r'[%^&*~\[\]]', '', content)
 
-    # More comprehensive URL pattern
-    url_pattern = r'\b(?:https?://)?(?:www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?'
-    urls = re.findall(url_pattern, cleaned_text)
-    no_urls = re.sub(url_pattern, '', cleaned_text)
+    url_pattern = re.compile(r'\b(?:https?://)?(?:www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?')
+    urls = url_pattern.findall(content)
+    content = url_pattern.sub('', content)
+
     clean_urls = []
     for url in urls:
-        if '(' in url and url.count('http') > 1:
-            url = url.split('(')[0]
+        url = url.split('(')[0] if '(' in url and url.count('http') > 1 else url
         url = url.rstrip(').,;')
-        if not re.search(r'\.\w{2,5}(/|$)', url):  # ensures domain or file extension
-            continue
-
-        clean_urls.append(url)
+        if re.search(r'\.\w{2,5}(/|$)', url):
+            clean_urls.append(url)
     clean_urls = list(set(clean_urls))
 
-    symbols_to_remove2 = ['(', ')', ':', '/']
-    table2 = str.maketrans('', '', ''.join(symbols_to_remove2))
-    second_clean = no_urls.translate(table2)
+    content = re.sub(r'[()/:]', '', content)
 
-    date_pattern = r'\b(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(\d{4})\b'
-    dates = ['.'.join(date) for date in re.findall(date_pattern, second_clean)]
-    no_dates = re.sub(date_pattern, '', second_clean)
+    date_pattern = re.compile(r'\b(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(\d{4})\b')
+    date_matches = date_pattern.findall(content)
+    dates = ['.'.join(date) for date in date_matches]
+    content = date_pattern.sub('', content)
 
-    split_by_line = [line.lstrip('#') for line in no_dates.split("\n") if line != "" and line != " "]
+    lines = [line.lstrip('#').strip() for line in content.splitlines() if line.strip()]
+    tokens = []
 
-    filter_set = set(['“', '-', '_', '.', ','] + [str(i) for i in range(10)] + [f'{i:02}' for i in range(10)])
+    filter_set = set('“-. _,.' + ''.join(map(str, range(10))) + ''.join(f'{i:02}' for i in range(10)))
+    filter_re = re.compile(r'[“\-_\.,0-9]{2,}')
+    split_re = re.compile(r"[’']+")
 
-    split_by_word = []
-
-    for line in split_by_line:
-        for text in line.split():
-            cleaned = text.strip('",.“”>`!?;=')
-
-            if len(cleaned) == 1 and cleaned in filter_set:
+    for line in lines:
+        for word in line.split():
+            word = word.strip('",.“”>`!?;=')
+            if len(word) == 1 and word in filter_set:
                 continue
+            word = filter_re.sub('', word)
+            if word:
+                tokens.extend(split_re.split(word.lower()))
 
-            for sym in filter_set:
-                cleaned = re.sub(f"{re.escape(sym)}{{2,}}", '', cleaned)
+    filtered_tokens = [t for t in tokens if t and t not in stoplist]
+    all_tokens = filtered_tokens + dates + clean_urls
 
-            if cleaned:
-                split_by_word += re.split(r"[’']+", cleaned.lower())
-
-    stop_list_filtered = [token for token in split_by_word if token not in stop_list()]
-
-    filtered_complete = stop_list_filtered + dates + clean_urls
-
-    freq_dict = {}
-    for token in filtered_complete:
-        if token in freq_dict:
-            freq_dict[token] += 1
-        else:
-            freq_dict[token] = 1
-    return sorted(freq_dict.items(), key=lambda x: x[1])
-
-def stop_list():
-    with open(stoplist_path, 'r', encoding="utf-8") as file:
-        return file.read().split("\n")
+    return sorted(Counter(all_tokens).items(), key=lambda x: x[1])
 
 LOGICAL_OPERATORS = {"and", "not", "or", "(", ")"}
 

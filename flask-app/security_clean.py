@@ -1,9 +1,5 @@
 import os
 
-clean_path = input("Input the path you would like to clean. This includes all subfolders.\ni.e. C:\\Users\\<User>\\Documents\n>>>")
-
-print("\n")
-
 def clean(path):
     i = 0
     try:
@@ -37,5 +33,9 @@ def clean(path):
                     print(f"Skipped (target exists): {new_path}\n")
     return i
 
-renamed_count = clean(clean_path)
-print(f"\n\n\nDone! Cleaned up {renamed_count} files.")
+if __name__ == '__main__':
+    clean_path = input("Input the path you would like to clean. This includes all subfolders.\ni.e. C:\\Users\\<User>\\Documents\n>>>")
+    print("\n")
+    renamed_count = clean(clean_path)
+    print(f"\n\n\nDone! Cleaned up {renamed_count} files.")
+    input()

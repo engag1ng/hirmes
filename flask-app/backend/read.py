@@ -11,13 +11,11 @@ def match_extractor(path):
         "pdf": pdf,
         "txt": txt,
         "docx": docx,
-        "doc": docx,
         "md": markdown,
         "pptx": pptx
     }
 
     if ext not in extractors:
-        print(f"Unsupported file type: {ext}")
         return None
     else:
         return extractors[ext]

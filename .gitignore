@@ -26,3 +26,4 @@ dist-ssr
 #Flask
 flask-app/.venv
 flask-app/build
+flask-app/prof
