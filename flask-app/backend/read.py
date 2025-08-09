@@ -21,15 +21,21 @@ def match_extractor(path):
         return extractors[ext]
 
 def txt(file_path, is_tokenize: bool = False):
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        raw_content = f.read()
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            raw_content = f.read()
+    except Exception:
+        return 555
     if is_tokenize:
         return [tokenize(raw_content)]
     return [raw_content]
 
 def pdf(file_path, is_tokenize: bool = False):
     pages = []
-    doc = pymupdf.open(file_path)
+    try:
+        doc = pymupdf.open(file_path)
+    except Exception:
+        return 555
     for page in doc:
         text = page.get_text()
         if is_tokenize:
@@ -39,13 +45,19 @@ def pdf(file_path, is_tokenize: bool = False):
     return pages
 
 def docx(file_path, is_tokenize: bool = False):
-    raw_content = docx2txt.process(file_path)
+    try:
+        raw_content = docx2txt.process(file_path)
+    except Exception:
+        return 555
     if is_tokenize:
         return [tokenize(raw_content)]
     return [raw_content]
 
 def pptx(file_path, is_tokenize: bool = False):
-    prs = Presentation(file_path)
+    try:
+        prs = Presentation(file_path)
+    except Exception:
+        return 555
     slides = []
     for slide in prs.slides:
         slide_text = ""
@@ -59,8 +71,11 @@ def pptx(file_path, is_tokenize: bool = False):
     return slides
 
 def markdown(file_path, is_tokenize: bool = False):
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        raw_content = f.read()
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            raw_content = f.read()
+    except Exception:
+        return 555
     if is_tokenize:
         return [tokenize(raw_content)]
     return [raw_content]

@@ -24,8 +24,14 @@ document.getElementById("indexForm").addEventListener("submit", function(e) {
 document.getElementById("searchForm").addEventListener("submit", function(e) {
     e.preventDefault();
 
-    const query = document.getElementById("searchInput").value;
-    fetch(`/search?query=${encodeURIComponent(query)}`)
+    const query = document.getElementById("query").value;
+    fetch(`/search`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            query: query,
+        })
+    })
     .then(res => res.json())
     .then(data => {
         if (data.error) {

@@ -33,12 +33,12 @@ def index_html():
 
 @app.route('/indexing', methods=['POST'])
 def api_indexing():
-    data = request.json
+    data = request.get_json(force=True)
     path = data.get('path')
     recursive = data.get('recursive', False)
     replace_filename = data.get('replace_filename', False)
 
-    number_indexed = fn_index(path, recursive, replace_filename)
+    number_indexed = fn_index_path(path, recursive, replace_filename)
 
     save_settings({
         "recursive": recursive,
@@ -47,9 +47,10 @@ def api_indexing():
 
     return jsonify({"indexed_count": number_indexed})
 
-@app.route('/search', methods=['GET'])
+@app.route('/search', methods=['POST'])
 def api_search():
-    query = request.args.get('query')
+    data = request.get_json(force=True) 
+    query = data.get('query')
     try:
         results = fn_search_index(query)
         return jsonify({"results": results})
@@ -61,7 +62,7 @@ def shutdown():
     def shutdown_server():
         print("Shutting down server...")
         server.close()
-        sys.exit(0)
+        os._exit(0)
     
     threading.Thread(target=shutdown_server).start()
     return jsonify({"message": "Sever is shutting down"}), 200

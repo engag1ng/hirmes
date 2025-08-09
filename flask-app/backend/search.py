@@ -167,25 +167,27 @@ def spellcheck(query, dictionary_path, bigram_path):
     return suggestions[0]
 
 def search_snippet(result):
-    tokens = result[4]
+    path = result[0]
     page_num = result[1]-1
+    tokens = result[4]
     NUM_TOKENS = len(tokens)
     NUM_SNIPPETS = 5
     CONTEXT_LENGTH = 5
     snippets = []
+
+    file_function = match_extractor(path)
+    raw_content = file_function(path)
+    if raw_content == 555:
+        snippets.append("File Not Found")
+        return snippets
+    content = raw_content[page_num] # Higher order filetype function -> read content -> filter page
+
     for token in tokens:
-        try:
-            file_function = match_extractor(result[0])
-            raw_content = file_function(result[0])
-            content = raw_content[page_num] # Higher order filetype function -> read content -> filter page
-            matches = context_windows(content, token, CONTEXT_LENGTH)
-            if NUM_TOKENS <= NUM_SNIPPETS:
-                snippets += matches[:NUM_SNIPPETS//NUM_TOKENS]
-            else:
-                snippets += matches[0]
-        except FileNotFoundError:
-            snippets.append("File Not Found")
-            break
+        matches = context_windows(content, token, CONTEXT_LENGTH)
+        if NUM_TOKENS <= NUM_SNIPPETS:
+            snippets += matches[:NUM_SNIPPETS//NUM_TOKENS]
+        else:
+            snippets += matches[0]
     return snippets
     
 
