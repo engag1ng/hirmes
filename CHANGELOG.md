@@ -1,3 +1,15 @@
+# 0.1.1 (2025-08-09)
+## Added
+* Splashscreen
+* Tests for Indexer
+## Changed
+* Improved indexing times by 750%
+## Fixed
+* RPN would always fail
+* app.exe wouldn't correctly close
+* ID was assigned even when file was not indexed
+
+
 # 0.1.0-beta.2 (2025-07-20)
 ## Added
 * Security clean-up script
