@@ -12,8 +12,9 @@ os.makedirs(app_folder, exist_ok=True)
 
 db_path = os.path.join(app_folder, "index.db")
 
+LOGICAL_OPERATORS = set("and", "not", "or", "(", ")")
 def is_operator(token):
-    return token in {"and", "or", "not"}
+    return token in LOGICAL_OPERATORS
 
 precedence = {
     "not": 3,
@@ -157,7 +158,6 @@ def fn_search_index(query):
     else:
         return "Error" 
 
-LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
 def spellcheck(query, dictionary_path, bigram_path):
     sym_spell = SymSpell()
     sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
@@ -189,7 +189,6 @@ def search_snippet(result):
         else:
             snippets += matches[0]
     return snippets
-    
 
 def context_windows(text: str, word: str, n: int = 5):
     """

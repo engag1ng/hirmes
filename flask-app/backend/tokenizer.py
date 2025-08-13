@@ -2,6 +2,10 @@ import re
 from backend.system import get_resource_path
 from collections import Counter
 
+LOGICAL_OPERATORS = set("and", "not", "or", "(", ")")
+def is_operator(token):
+    return token in LOGICAL_OPERATORS
+
 def return_stop_list():
     with open(stoplist_path, 'r', encoding="utf-8") as file:
         return set(file.read().split("\n"))
@@ -52,15 +56,13 @@ def tokenize(content):
 
     return sorted(Counter(all_tokens).items(), key=lambda x: x[1])
 
-LOGICAL_OPERATORS = {"and", "not", "or", "(", ")"}
-
 def tokenize_query(query):
     pattern = r'\band\b|\bnot\b|\bor\b|\(|\)|\w+'
     tokens = re.findall(pattern, query)
 
     processed_tokens = []
     for token in tokens:
-        if token in LOGICAL_OPERATORS:
+        if is_operator(token):
             processed_tokens.append(token)
         else:
             tokenized = tokenize(token.lower())
