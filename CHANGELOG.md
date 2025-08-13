@@ -9,7 +9,6 @@
 * app.exe wouldn't correctly close
 * ID was assigned even when file was not indexed
 
-
 # 0.1.0-beta.2 (2025-07-20)
 ## Added
 * Security clean-up script
