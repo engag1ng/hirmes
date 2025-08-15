@@ -1,5 +1,5 @@
 import pytest
-from backend.search import spellcheck
+from backend.search import spellcheck, fn_search_index
 from importlib.resources import files
 from symspellpy import SymSpell
 
@@ -18,7 +18,8 @@ test_cases = [
     ("quickly", "quickly"),
     ("really", "really"),
     ("accommodate", "accommodate"),
-    ("Mi namme is herre.","my name is here")
+    ("Mi namme is herre.","my name is here"),
+    ("He is boing.", "he is being")
 ]
 
 @pytest.mark.parametrize("query,expected", test_cases)
@@ -27,3 +28,16 @@ def test_spellcheck_correctness(query, expected):
     bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
     result = spellcheck(query, dictionary_path, bigram_path).term
     assert result == expected, f"{query} → {result} (expected {expected})"
+
+query_tests = [
+    "Chemie",
+    "Synthetische AND Kunststoffe",
+    "Tenside OR Polymerbausteine",
+    "Chemie NOT Veresterung",
+    "( Wasserstoff OR Veresterung ) NOT Chemie"
+]
+
+def test_search_speed():
+    for query in query_tests:
+        result = fn_search_index(query)
+    assert result != "Error"

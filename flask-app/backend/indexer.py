@@ -1,6 +1,7 @@
 import os
 import datetime
 from backend.read import *
+from backend.database import *
 import sqlite3
 
 app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
@@ -16,44 +17,39 @@ def fn_index_path(path, is_recursive, is_replace_full):
 
 def index_files(files_tuples, is_replace_full):
     conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
-    for doc_path, is_index in files_tuples:
-        ID = datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")
-        dir_name = os.path.dirname(doc_path)
-        base_name = os.path.basename(doc_path)
-        file_name, file_extension = os.path.splitext(base_name)
+    try:
+        initialise_db(conn)
+        enable_bulk_mode(conn)
+        with conn:
+            token_cache = {}
+            for doc_path, is_index in files_tuples:
+                ID = datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")
+                dir_name = os.path.dirname(doc_path)
+                base_name = os.path.basename(doc_path)
+                file_name, file_extension = os.path.splitext(base_name)
 
-        if is_replace_full:
-            new_name = "★ " + ID + file_extension
-        else:
-            new_name = file_name + " ★ " + ID + file_extension
+                if is_replace_full:
+                    new_name = "★ " + ID + file_extension
+                else:
+                    new_name = file_name + " ★ " + ID + file_extension
 
-        new_path = os.path.join(dir_name, new_name)
-        os.rename(doc_path, new_path)
+                new_path = os.path.join(dir_name, new_name)
+                os.rename(doc_path, new_path)
 
-        if is_index:
-            extractor_func = match_extractor(new_path)
-            pages = extractor_func(new_path, True)
+                if not is_index:
+                    continue
 
-            cur.execute('''
-                CREATE TABLE IF NOT EXISTS postings (
-                    token TEXT,
-                    path TEXT,
-                    page INTEGER,
-                    tf INTEGER
-                )
-            ''')
+                extractor = match_extractor(new_path)
+                pages = extractor(new_path, is_tokenize=True)  # must return list[list[str]]
+                doc_id = get_or_create_doc_id(conn, new_path)
 
-            for i, tokens in enumerate(pages):
-                for token in tokens:
-                    cur.execute('''
-                        INSERT INTO postings (token, path, page, tf)
-                        VALUES (?, ?, ?, ?)
-                    ''', (token[0], new_path, i + 1, token[1]))
-
-    conn.commit()
-    conn.close()
-
+                for page_idx, tokens in enumerate(pages, start=1):
+                    counts = Counter(tokens)                     # token -> tf (on that page)
+                    token_tf_pairs = list(counts.items())
+                    bulk_upsert_postings(conn, token_tf_pairs, doc_id, page_idx, _token_cache=token_cache)
+    finally:
+        disable_bulk_mode(conn)
+        conn.close()
 
 def get_files_without_id(path, is_recursive):
     i = 0

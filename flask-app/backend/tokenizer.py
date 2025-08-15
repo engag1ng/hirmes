@@ -2,7 +2,7 @@ import re
 from backend.system import get_resource_path
 from collections import Counter
 
-LOGICAL_OPERATORS = set("and", "not", "or", "(", ")")
+LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
 def is_operator(token):
     return token in LOGICAL_OPERATORS
 
@@ -54,10 +54,10 @@ def tokenize(content):
     filtered_tokens = [t for t in tokens if t and t not in stoplist]
     all_tokens = filtered_tokens + dates + clean_urls
 
-    return sorted(Counter(all_tokens).items(), key=lambda x: x[1])
+    return all_tokens
 
 def tokenize_query(query):
-    pattern = r'\band\b|\bnot\b|\bor\b|\(|\)|\w+'
+    pattern = r'\bAND\b|\bNOT\b|\bOR\b|\(|\)|\w+'
     tokens = re.findall(pattern, query)
 
     processed_tokens = []
@@ -67,9 +67,7 @@ def tokenize_query(query):
         else:
             tokenized = tokenize(token.lower())
             if tokenized:
-                term_tokens = tokenized[0][0]
-            else:
-                term_tokens = ''
-            processed_tokens.append(term_tokens)
+                term_tokens = tokenized[0]
+                processed_tokens.append(term_tokens)
 
     return processed_tokens

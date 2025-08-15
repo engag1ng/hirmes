@@ -85,8 +85,9 @@ Example query:
 
 This will first evaluate the expression in the paranthesis and then use it's result for further computation.
 
-> [!WARNING] Paranthesis placement
-> Note that paranthesis should be placed seperate from words to be recognized as individual operators instead of parts of a word.
+!!!
+
+Note that paranthesis should be placed seperate from words to be recognized as individual operators instead of parts of a word.
 
 **AND Operator**:
 The AND operator can be used to express, that a file has to contain both search terms for it to be regarded.
