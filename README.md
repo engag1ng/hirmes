@@ -125,13 +125,6 @@ This will return all files that contain *management* but not *geography*.
 
 ### Style guide
 - Boolean variables must be denoted by the prefix `is`.
-- String variables must be denoted by the prefix `str`.
-- Integer variables must be denoted by the prefix `int`.
-- Float variables must be denoted by the prefix `float`.
-- Arrays / Lists must be denoted by the prefix `arr`.
-- Sets must be denoted by the prefix `set`.
-- Tuples must be denoted by the prefix `tup`.
-- Dictionaries must be denoted by the prefix `dict`.
 - Every module should be started by docstring expaining it's usage.
 	- Needs to start with a one line summary
 	- Followed by a more extensive explanation

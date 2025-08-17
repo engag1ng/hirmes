@@ -1,8 +1,29 @@
-import sqlite3
+"""
+Database utilities for managing index.
+
+Functions for CRUD operations on all tables.
+
+Typical usage:
+    from backend.database import initialise database
+
+    initialise_db(conn)
+    doc_id = get_or_create_doc_id(conn, path)
+    bulk_upsert_postings(conn, token_tf_pairs, doc_id, page)
+    fetch_postings_for_token(conn, token_text)
+"""
+
 import json
-from collections import Counter
 
 def initialise_db(conn):
+    """Creates all necessary tables and indeces in the database.
+
+    Args:
+        conn: SQLite3 Connection object
+    
+    Return:
+        None
+    """
+
     cur = conn.cursor()
     cur.executescript("""
     CREATE TABLE IF NOT EXISTS Document (
@@ -31,50 +52,93 @@ def initialise_db(conn):
     CREATE INDEX IF NOT EXISTS idx_token_text      ON Token(token_text);
     """)
 
-def get_doc_id_from_path(conn, path):
-    cur = conn.cursor()
-    cur.execute("SELECT doc_id FROM Document WHERE path = ?", (path,))
-    row = cur.fetchone()
-    return row[0] if row else None
+def get_or_create_doc_id(conn, path: str, metadata=None) -> int:
+    """Creates and/or retrieves doc_id for path from Document table.
 
-def get_or_create_doc_id(conn, path, metadata=None):
+    If a doc_id already exists for the path then it is returned. 
+    If it doesn't exist it is first created and then returned. 
+
+    Args:
+        conn: SQLite3 connection object
+        path: String denoting the full path of a file
+        metadata: Additional metadata to append to the entry
+    
+    Returns:
+        doc_id: As integer
+    """
+
     cur = conn.cursor()
     cur.execute("INSERT OR IGNORE INTO Document(path, metadata) VALUES(?, ?)",
                 (path, json.dumps(metadata) if metadata is not None else None))
     cur.execute("SELECT doc_id FROM Document WHERE path = ?", (path,))
-    return cur.fetchone()[0]
+    row = cur.fetchone()
+    doc_id = row[0]
 
-def get_path_from_doc_id(conn, doc_id):
+    return doc_id
+
+def get_path_from_doc_id(conn, doc_id: int) -> str | None:
+    """Retrieves path for doc_id from Document table.
+
+    Args:
+        conn: SQLite3 connection object
+        doc_id: Integer denoting the ID of a file
+
+    Returns:
+        path: String denoting the full path to a file
+        None: If doc_id doesn't exist in database
+    """
+
     cur = conn.cursor()
     cur.execute("SELECT path FROM Document WHERE doc_id = ?", (doc_id,))
     row = cur.fetchone()
-    return row[0] if row else None
+    path = row[0] if row else None
 
-def _ensure_token_ids(conn, tokens, cache):
+    return path
+
+def _ensure_token_ids(conn, tokens: list[str], cache: dict) -> dict:
     """
-    Given an iterable of token_text, ensure they exist in Token and
-    return a dict token_text -> token_id. Uses/updates `cache` (dict).
+    Ensure token_text's exist in Token and return a dict token_text -> token_id.
+    Uses/updates `cache` (dict).
+
+    Args:
+        conn: SQLite3 connection object
+        tokens: List of tokens in string format
+
+    Returns:
+        cache: A dictionary of token_text: token_id
     """
+
     to_insert = [t for t in tokens if t not in cache]
     if to_insert:
         cur = conn.cursor()
-        # bulk insert ignore
         cur.executemany("INSERT OR IGNORE INTO Token(token_text) VALUES(?)",
                         ((t,) for t in to_insert))
-        # bulk fetch ids for all new tokens
-        # Build a dynamic IN (...) clause safely
         placeholders = ",".join("?" for _ in to_insert)
         cur.execute(f"SELECT token_id, token_text FROM Token WHERE token_text IN ({placeholders})",
                     to_insert)
         for tid, ttext in cur.fetchall():
             cache[ttext] = tid
+
     return cache
 
-def bulk_upsert_postings(conn, token_tf_pairs, doc_id, page, _token_cache=None):
+def bulk_upsert_postings(
+    conn,token_tf_pairs: list[tuple], doc_id: int, page: int, _token_cache=None
+):
+    """Inserts many Tokens for a doc_id into Posting table
+
+    Also creates a cache if None exists. 
+
+    Args:
+        conn: SQLite3 connection object
+        token_tf_pairs: List of tuples representing token_text and term_frequency pairs
+        doc_id: Integer ID of file that tokens belong to
+        page: Integer page indicator for files that support page-by-page indexing (else 1)
+        _token_cache (optional): Dictionary representing token_text: token_id pairs
+    
+    Returns:
+        None
     """
-    token_tf_pairs: iterable[(token_text, tf)]
-    Upserts rows in Posting with tf aggregation.
-    """
+
     if _token_cache is None:
         _token_cache = {}
 
@@ -94,10 +158,17 @@ def bulk_upsert_postings(conn, token_tf_pairs, doc_id, page, _token_cache=None):
         DO UPDATE SET tf = Posting.tf + excluded.tf
     """, rows)
 
-def fetch_postings_for_token(conn, token_text):
+def fetch_postings_for_token(conn, token_text: str) -> list[tuple]:
+    """Returns list of (path, page, tf) for a given token_text.
+
+    Args:
+        conn: SQLite3 connection object
+        token_text: String token
+
+    Returns:
+        rows: List of (path, page, tf) for a given token_text.
     """
-    Returns list of (path, page, tf) for a given token_text.
-    """
+
     cur = conn.cursor()
     cur.execute("""
         SELECT d.path, p.page, p.tf
@@ -106,9 +177,20 @@ def fetch_postings_for_token(conn, token_text):
         JOIN Document d ON d.doc_id = p.doc_id
         WHERE t.token_text = ?
     """, (token_text,))
-    return cur.fetchall()
+    rows = cur.fetchall()
+
+    return rows
 
 def enable_bulk_mode(conn):
+    """Turns on optional SQLite3 settings to enable for fast bulk insert.
+
+    Args:
+        conn: SQLite3 connection object
+
+    Returns:
+        None
+    """
+
     cur = conn.cursor()
     cur.executescript("""
         PRAGMA journal_mode = WAL;
@@ -118,16 +200,33 @@ def enable_bulk_mode(conn):
     """)
 
 def disable_bulk_mode(conn):
+    """Sets PRAGMA synchronous to NORMAL mode.
+
+    Args:
+        conn: SQLite3 connection object
+
+    Returns:
+        None
+    """
     cur = conn.cursor()
     cur.executescript("""
         PRAGMA synchronous = NORMAL;
     """)
 
-def _term_doc_map(conn, token):
-    # returns {(path, page): {"match_count": 1, "total_tf": tf, "terms": {token}}}
+def _term_doc_map(conn, token: str) -> dict:
+    """Returns a dictionary mapping of path, page to important information.
+
+    The returned dictionary is a mapping of (path, page) to a dictionary of 
+    {"match_count": 1, "total_tf": term frequency, "terms" {token}}.
+
+    Args:
+        conn: SQLite3 connection object
+        token: String token
+    """
     rows = fetch_postings_for_token(conn, token)
     m = {}
     for path, page, tf in rows:
         key = (path, page)
         m[key] = {"match_count": 1, "total_tf": tf, "terms": {token}}
+
     return m
