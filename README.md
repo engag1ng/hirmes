@@ -55,7 +55,6 @@ Result can be found in `src-tauri/target/release/`.
 4. Click **Index** and wait. A message will be displayed, when the indexing process is done.
 5. Enter your search query and click **Search**. [Read more](#querying)
 
-## Documentation
 ### Indexing
 List of supported file types:
 - PDF files \*
@@ -118,6 +117,40 @@ management NOT geography
 ```
 
 This will return all files that contain *management* but not *geography*.
+
+## Documentation
+
+- Always run `pylint` and `pytest` on your code before pushing.
+- It is recommended to use type hints and run `pytype` before pushing.
+
+### Style guide
+- Boolean variables must be denoted by the prefix `is`.
+- String variables must be denoted by the prefix `str`.
+- Integer variables must be denoted by the prefix `int`.
+- Float variables must be denoted by the prefix `float`.
+- Arrays / Lists must be denoted by the prefix `arr`.
+- Sets must be denoted by the prefix `set`.
+- Tuples must be denoted by the prefix `tup`.
+- Dictionaries must be denoted by the prefix `dict`.
+- Every module should be started by docstring expaining it's usage.
+	- Needs to start with a one line summary
+	- Followed by a more extensive explanation
+- Functions and methods need to be docstringed.
+	- Needs to start with a one line summary
+	- If necessary followed by a more extensive explanation
+	- Needs to contain sections: Args, Returns (or Yields), Raises
+- Classes need to be docstringed.
+	- Needs to start with a one line summary
+	- If necessary followed by a more extensive explanation
+	- Needs to contain Attributes section
+- Lists / arrays should only be used when all elements are the same type, in other cases use tuples.
+- Prefer tuples for function returns
+
+#### Python
+- Naming: ClassName, local_var_name, GLOBAL_CONSTANT_NAME (follow snake case)
+#### JavaScript
+- Naming: packageName, ClassName, CONSTANT_NAME, variableName
+
 
 ## License
 This project is licensed under a custom license! Please read the LICENSE file. 
