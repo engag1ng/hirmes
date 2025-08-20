@@ -55,7 +55,7 @@ def tokenize(content: str) -> list:
 
     for line in lines:
         for word in line.split():
-            word = word.strip('",.“”>`!?;=')
+            word = word.strip('",.“”>`!?;=_')
             if len(word) == 1 and word in filter_set:
                 continue
             word = FILTER_RE.sub('', word)
