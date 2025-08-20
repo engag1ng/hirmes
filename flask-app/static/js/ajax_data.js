@@ -40,7 +40,10 @@ document.getElementById("searchForm").addEventListener("submit", function(e) {
             displaySearchResults(data.results);
         }
     })
-    .catch(() => showPopup("Search failed!"));
+    .catch(err => {
+        console.error("Fetch failed:", err);
+        showPopup("Search failed!");
+    });
 });
 
 function displaySearchResults(results) {
@@ -51,20 +54,16 @@ function displaySearchResults(results) {
         <table>
             <tr>
                 <th>Path</th>
-                <th>Page</th>
-                <th>Match count</th>
-                <th>Total TF</th>
+                <th>Pages</th>
                 <th>Terms matched</th>
                 <th>Snippets</th>
             </tr>
             ${results.map(row => `
                 <tr>
-                    <td>${row[0]}</td>
-                    <td>${row[1]}</td>
-                    <td>${row[2]}</td>
-                    <td>${row[3]}</td>
-                    <td><ul>${row[4].map(t => `<li>${t}</li>`).join('')}</ul></td>
-                    <td><ul>${row[5].map(s => `<li>${s}</li>`).join('')}</ul></td>
+                    <td>${row.path}</td>
+                    <td>${row.page_numbers.join(", ")}</td>
+                    <td><ul>${row.match_terms.map(t => `<li>${t}</li>`).join('')}</ul></td>
+                    <td><ul>${row.snippet.map(s => `<li>${s}</li>`).join('')}</ul></td>
                 </tr>
             `).join('')}
         </table>

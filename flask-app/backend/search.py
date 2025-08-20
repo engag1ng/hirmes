@@ -1,33 +1,106 @@
-from backend.tokenizer import tokenize, tokenize_query
-from collections import defaultdict
-from backend.read import *
-from backend.database import *
+"""
+Index database search and spellcheck utilities.
+
+Typical usage:
+    results = search_index(query)
+"""
+
 import re
-from importlib.resources import files
-from symspellpy import SymSpell, Verbosity
 import os
-import json
 import sqlite3
+from collections import defaultdict
+from symspellpy import SymSpell
+from backend.tokenizer import tokenize_query # pylint: disable=import-error
+from backend.read import match_extractor # pylint: disable=import-error
+from backend.database import fetch_postings_for_token # pylint: disable=import-error
+# from importlib.resources import files
 
-app_folder = os.path.join(os.getenv("APPDATA"), "Hirmes")
-os.makedirs(app_folder, exist_ok=True)
+APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
+os.makedirs(APP_FOLDER, exist_ok=True)
 
-db_path = os.path.join(app_folder, "index.db")
-
+DB_PATH = os.path.join(APP_FOLDER, "index.db")
 LOGICAL_OPERATORS = {"and", "not", "or", "(", ")"}
-def is_operator(token):
+
+def search_index(query: str) -> list | None:
+    """Returns ranked matching documents for query.
+
+    Args:
+        query: String combination of search words and logical operators.
+
+    Returns:
+        result_docs: List of search results
+                List[{path: str, page_numbers: list, matched_terms: list, snippet: list}] 
+    """
+
+#   dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
+#   bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
+#   spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
+#   print(f"spellchecked: {spellchecked_query}")
+#   tokenized_query = tokenize_query(spellchecked_query)
+    tokenized_query = tokenize_query(query)
+    rpn = _to_rpn(tokenized_query)
+    result_docs = _evaluate_rpn_ranked(rpn)
+    if not result_docs:
+        return None
+
+    for result_number, result in enumerate(result_docs):
+        if result_number < 5:
+            result["snippet"] = _search_snippet(result)
+        else:
+            result["snippet"] = None
+
+    return result_docs
+
+def spellcheck(text: str, dictionary_path: str, bigram_path: str) -> str:
+    """Spellcheck text against dictionary and bigram dictionary.
+
+    Args:
+        text: String to spellcheck
+        dictionary_path: Full path to single word dictionary
+        bigram_path: Full path to bigram dictionary
+    
+    Returns:
+        str: Spellchecked text
+    """
+
+    sym_spell = SymSpell()
+    sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
+    sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
+    suggestions = sym_spell.lookup_compound(text, max_edit_distance=2)
+
+    return suggestions[0]
+
+def _is_operator(token: str) -> bool:
+    """Returns whether token is a logical operator.
+
+    Args:
+        token: String to check
+
+    Returns:
+        bool: True if token is logical operator.
+    """
+
     return token in LOGICAL_OPERATORS
 
-def to_rpn(tokens):
+def _to_rpn(tokens: list) -> list:
     """
-    Convert a list of tokens (strings) into Reverse Polish Notation (RPN)
-    using the Shunting Yard algorithm.
+    Convert list of tokens into Reverse Polish Notation (RPN).
 
     Supports:
     - Operators: NOT, AND, OR
     - Parentheses: ( and )
     - Operands: numbers, words, etc.
+
+    Args:
+        tokens: List of string tokens.
+
+    Returns:
+        output_queue: list of RPN tokens
+    
+    Raises:
+        ValueError: If there are unmatched paranthesis.
     """
+
     precedence = {
         "not": 3,
         "and": 2,
@@ -49,17 +122,14 @@ def to_rpn(tokens):
                     precedence[tok] < precedence[operator_stack[-1].lower()]))):
                 output_queue.append(operator_stack.pop())
             operator_stack.append(tok)
-
         elif token == "(":
             operator_stack.append(token)
-
         elif token == ")":
             while operator_stack and operator_stack[-1] != "(":
                 output_queue.append(operator_stack.pop())
             if not operator_stack:
                 raise ValueError("Mismatched parentheses")
             operator_stack.pop()
-
         else:
             output_queue.append(token)
 
@@ -70,43 +140,77 @@ def to_rpn(tokens):
 
     return output_queue
 
-def extract_doc_keys(entries):
-    return set((path, page) for path, page, _ in entries)
+def _evaluate_or(left: dict, right: dict, result: dict) -> dict:
+    """Evaluate OR (|) gate and edit result accordingly.
 
-def evaluate_rpn_ranked(rpn_tokens, db_path):
+    Args:
+        left: Dictionary of left token.
+        right: Dictionary of right token.
+        result: Dictionary to be edited.
+
+    Returns:
+        result: Edited result dictionary.
     """
-    Evaluates an RPN boolean expression with AND, OR, NOT and returns ranked results.
+    all_keys = left.keys() | right.keys()
+    for key in all_keys:
+        result[key]["match_count"] = (
+            left[key]["match_count"]
+            + right[key]["match_count"]
+        )
+        result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
+        result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+        result[key]["pages"] = left[key]["pages"] | right[key]["pages"]
+
+    return result
+
+def _evaluate_and(left: dict, right: dict, result: dict) -> dict:
+    """Evaluates AND (&) gate and edit result accordingly.
+
+    Args:
+        left: Dictionary of left token.
+        right: Dictionary of right token.
+        result: Dictionary to be edited.
+
+    Returns:
+        result: Edited result dictionary.
+    """
+    common_keys = left.keys() & right.keys()
+    for key in common_keys:
+        result[key]["match_count"] = (
+            left[key]["match_count"]
+            + right[key]["match_count"]
+        )
+        result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
+        result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
+        result[key]["pages"] = left[key]["pages"] | right[key]["pages"]
+
+    return result
+
+
+def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
+    """Evaluates RPN boolean expression and returns ranked results.
+
+
     Ranking is based on number of terms matched, then total term frequency.
     Evaluates at the document level (doc_id as key), but stores pages inside each doc.
+
+    Args:
+        rpn_tokens: List of tokens in RPN format.
+
+    Returns:
+        results: List[{path: str, page_numbers: list, matched_terms: list}] 
     """
 
-    def fetch_all_docs(cur):
-        cur.execute("SELECT doc_id, path FROM Document")
-        return {doc_id: path for doc_id, path in cur.fetchall()}
-
-    def is_operator(tok):
-        return tok.upper() in {"NOT", "AND", "OR"}
-
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
+    conn = sqlite3.connect(DB_PATH)
 
     stack = []
 
     for token in rpn_tokens:
-        tok = token.upper()
-
-        if is_operator(tok):
-            if tok == "NOT":
-                operand = stack.pop()
-                operand_keys = set(operand.keys())
-
-                all_docs = fetch_all_docs(cur)
-                result = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
-
-                for doc_id in all_docs.keys():
-                    if doc_id not in operand_keys:
-                        result[doc_id]
-
+        if _is_operator(token):
+            if token == "not":
+                result = defaultdict(
+                    lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
+                )
                 stack.append(result)
 
             else:
@@ -117,37 +221,27 @@ def evaluate_rpn_ranked(rpn_tokens, db_path):
                     conn.close()
                     return None
 
-                result = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
+                result = defaultdict(
+                    lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
+                )
 
-                if tok == "AND":
-                    common_keys = left.keys() & right.keys()
-                    for key in common_keys:
-                        result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
-                        result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
-                        result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
-                        result[key]["pages"] = left[key]["pages"] | right[key]["pages"]
+                if token == "and":
+                    result = _evaluate_and(left, right, result)
 
-                elif tok == "OR":
-                    all_keys = left.keys() | right.keys()
-                    for key in all_keys:
-                        result[key]["match_count"] = left[key]["match_count"] + right[key]["match_count"]
-                        result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
-                        result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
-                        result[key]["pages"] = left[key]["pages"] | right[key]["pages"]
+                elif token == "or":
+                    result = _evaluate_or(left, right, result)
 
                 stack.append(result)
 
         else:
-            postings = fetch_postings_for_token(conn, token)
-
-            doc_map = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
-            for doc_path, page, tf in postings:
+            doc_map = defaultdict(
+                lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
+            )
+            for doc_path, page, tf in fetch_postings_for_token(conn, token):
                 doc_map[doc_path]["match_count"] += 1
                 doc_map[doc_path]["total_tf"] += tf
                 doc_map[doc_path]["terms"].add(token)
                 doc_map[doc_path]["pages"].add(page)
-
-
 
             stack.append(doc_map)
 
@@ -157,78 +251,86 @@ def evaluate_rpn_ranked(rpn_tokens, db_path):
 
     final_map = stack.pop()
 
-    results = []
     results = [
-        [str(doc_path), sorted(list(data["pages"])), data["match_count"], data["total_tf"], list(data["terms"])] for doc_path, data in final_map.items()
+        (
+            str(doc_path),
+            sorted(list(data["pages"])),
+            data["match_count"],
+            data["total_tf"],
+            list(data["terms"])
+        )
+        for doc_path, data in final_map.items()
     ]
 
     results.sort(key=lambda x: (-x[2], -x[3]))
 
+    truncated_results = [
+        {
+            "path": doc_path,
+            "page_numbers": pages,
+            "match_terms": terms
+        }
+        for doc_path, pages, _mc, _tf, terms in results
+    ]
+
     conn.close()
-    return results
 
-def fn_search_index(query):
-    dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
-    bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
-#    spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
-#    print(f"spellchecked: {spellchecked_query}")
-#    tokenized_query = tokenize_query(spellchecked_query)
-    tokenized_query = tokenize_query(query)
-    rpn = to_rpn(tokenized_query)
-    result_docs = evaluate_rpn_ranked(rpn, db_path)
-    if result_docs:
-        for i, result in enumerate(result_docs):
-            if i < 5:
-                result.append(search_snippet(result))
-            else:
-                result.append([])
-        return result_docs
-    else:
-        return "Error" 
+    return truncated_results
 
-def spellcheck(query, dictionary_path, bigram_path):
-    sym_spell = SymSpell()
-    sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
-    sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
-    suggestions = sym_spell.lookup_compound(query, max_edit_distance=2)
+def _search_snippet(result: dict) -> list:
+    """Finds snippets in document for all matched terms.
 
-    return suggestions[0]
-
-def search_snippet(result):
-    path = result[0]
-    page_nums = result[1]
-    tokens = result[4]
-    NUM_TOKENS = len(tokens)
-    NUM_SNIPPETS = 5
-    CONTEXT_LENGTH = 5
+    Args:
+        result: Dictionary containing the document path, 
+                page numbers and matched terms.
+    
+    Returns:
+        snippets: List of string snippets for matched terms.
+    """
+    path = result["path"]
+    page_nums = result["page_numbers"]
+    tokens = result["match_terms"]
+    num_tokens = len(tokens)
+    num_snippets = 5
+    context_length = 5
     snippets = []
-
     file_function = match_extractor(path)
     raw_content = file_function(path)
-    if raw_content == 555:
+    if not raw_content:
         snippets.append("File Not Found")
         return snippets
-    
+
     for num in page_nums:
-        content = raw_content[num-1] # Higher order filetype function -> read content -> filter page
+        # Higher order filetype function -> read content -> filter page
+        document_content = raw_content[num-1]
 
         for token in tokens:
-            matches = context_windows(content, token, CONTEXT_LENGTH)
-            if NUM_TOKENS <= NUM_SNIPPETS:
-                snippets += matches[:NUM_SNIPPETS//NUM_TOKENS]
+            matches = _context_windows(document_content, token, context_length)
+            if num_tokens <= num_snippets:
+                snippets += matches[:num_snippets//num_tokens]
             else:
                 snippets += matches[0]
+
     return snippets
 
-def context_windows(text: str, word: str, n: int = 5):
+def _context_windows(text: str, word: str, n: int = 5) -> list:
     """
-    Finds all occurrences of `word` and returns up to `n` words before and after each,
-    including punctuation.
+    Finds all occurrences of `word` and returns up to `n` words before and after
+
+    The search results include punctuation and special characters.
+
+    Args:
+        text: String to search
+        word: String search term
+        n: Number of words to return before and after.
+
+    Returns:
+        list: All matches for word in text in string format.
     """
     pattern = (
         rf'(?:\b\w+[^\s\w]*\s+){{0,{n}}}'
-        rf'\b{re.escape(word)}[^\s\w]*'  
-        rf'(?:\s+\w+[^\s\w]*){{0,{n}}}'  
+        rf'\b{re.escape(word)}[^\s\w]*'
+        rf'(?:\s+\w+[^\s\w]*){{0,{n}}}'
     )
 
     return re.findall(pattern, text, flags=re.IGNORECASE)

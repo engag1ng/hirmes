@@ -19,9 +19,6 @@ def initialise_db(conn):
 
     Args:
         conn: SQLite3 Connection object
-    
-    Return:
-        None
     """
 
     cur = conn.cursor()
@@ -134,9 +131,6 @@ def bulk_upsert_postings(
         doc_id: Integer ID of file that tokens belong to
         page: Integer page indicator for files that support page-by-page indexing (else 1)
         _token_cache (optional): Dictionary representing token_text: token_id pairs
-    
-    Returns:
-        None
     """
 
     if _token_cache is None:
@@ -186,9 +180,6 @@ def enable_bulk_mode(conn):
 
     Args:
         conn: SQLite3 connection object
-
-    Returns:
-        None
     """
 
     cur = conn.cursor()
@@ -204,10 +195,8 @@ def disable_bulk_mode(conn):
 
     Args:
         conn: SQLite3 connection object
-
-    Returns:
-        None
     """
+
     cur = conn.cursor()
     cur.executescript("""
         PRAGMA synchronous = NORMAL;

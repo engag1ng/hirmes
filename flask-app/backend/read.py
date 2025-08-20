@@ -1,10 +1,26 @@
+"""
+Document reading utilities for extracting text.
+
+Typical usage:
+    file_func = matchextractor(file_path)
+    content = file_func(file_path, False)
+"""
+
 from pathlib import Path
 import pymupdf
 import docx2txt
 from pptx import Presentation
-from backend.tokenizer import tokenize
 
-def match_extractor(path):
+def match_extractor(path: str):
+    """Higher-level function returning appropriate extraction function for file.
+
+    Args:
+        path: String of full path to file.
+
+    Returns:
+        func: Function for extracting content from file.
+    """
+
     ext = Path(path).suffix.lower().lstrip(".")
 
     extractors = {
@@ -15,67 +31,98 @@ def match_extractor(path):
         "pptx": pptx
     }
 
-    if ext not in extractors:
-        return None
-    else:
+    if ext in extractors:
         return extractors[ext]
+    return None
 
-def txt(file_path, is_tokenize: bool = False):
-    try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            raw_content = f.read()
-    except Exception:
-        return 555
-    if is_tokenize:
-        return [tokenize(raw_content)]
+def txt(path: str) -> list | None:
+    """Extracts text from txt file.
+
+    Args:
+        path: String of full path to file.
+        
+    Returns:
+        list: One item list of text string.
+        None: If extraction fails.
+    """
+
+    if not Path(path).is_file():
+        return None
+    with open(path, 'r', encoding='utf-8', errors='ignore') as file:
+        raw_content = file.read()
     return [raw_content]
 
-def pdf(file_path, is_tokenize: bool = False):
-    pages = []
-    try:
-        doc = pymupdf.open(file_path)
-    except Exception:
-        return 555
-    for page in doc:
-        text = page.get_text()
-        if is_tokenize:
-            pages.append(tokenize(text))
-        else:
-            pages.append(text)
-    return pages
+def pdf(path: str) -> list | None:
+    """Extracts text from pdf file.
 
-def docx(file_path, is_tokenize: bool = False):
-    try:
-        raw_content = docx2txt.process(file_path)
-    except Exception:
-        return 555
-    if is_tokenize:
-        return [tokenize(raw_content)]
-    return [raw_content]
+    Args:
+        path: String of full path to file.
 
-def pptx(file_path, is_tokenize: bool = False):
-    try:
-        prs = Presentation(file_path)
-    except Exception:
-        return 555
-    slides = []
-    for slide in prs.slides:
-        slide_text = ""
-        for shape in slide.shapes:
-            if hasattr(shape, "text"):
-                slide_text += shape.text+"\n"
-        if is_tokenize:
-            slides.append(tokenize(slide_text))
-        else:
-            slides.append(slide_text)
-    return slides
+    Returns:
+        list: One string per page.
+        None: If extraction fails.
+    """
 
-def markdown(file_path, is_tokenize: bool = False):
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            raw_content = f.read()
+        document = pymupdf.open(path)
+        pages = [page.get_text() for page in document]
+        return pages
     except Exception:
-        return 555
-    if is_tokenize:
-        return [tokenize(raw_content)]
+        return None
+
+def docx(path: str) -> list | None:
+    """Extracts text from docx file.
+
+    Args:
+       path: String of full path to file. 
+    
+    Returns:
+        list: One item list of text string.
+        None: If extraction fails.
+    """
+
+    try:
+        raw_content = docx2txt.process(path)
+        return [raw_content]
+    except Exception:
+        return None
+
+def pptx(path: str) -> list | None:
+    """Extracts text from pptx file.
+
+    Args:
+        path: String of full path to file.
+
+    Returns:
+        list: One string per page.
+        None: If extraction fails.
+    """
+    try:
+        prs = Presentation(path)
+        slides = []
+        for slide in prs.slides:
+            slide_text = ""
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    slide_text += shape.text+"\n"
+                slides.append(slide_text)
+        return slides
+    except Exception:
+        return None
+
+def markdown(path: str) -> list | None:
+    """Extracts text from markdown file.
+
+    Args:
+        path: String of full path to file.
+
+    Returns:
+        list: One item list of text string. 
+        None: If extraction fails.
+    """
+
+    if not Path(path).is_file():
+        return None
+    with open(path, 'r', encoding='utf-8', errors='ignore') as file:
+        raw_content = file.read()
     return [raw_content]
