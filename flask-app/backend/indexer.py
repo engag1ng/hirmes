@@ -21,6 +21,7 @@ from backend.database import ( # pylint: disable=import-error
     disable_bulk_mode,
     get_or_create_doc_id
 )
+from backend.tokenizer import tokenize
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -73,9 +74,9 @@ def _generate_new_path(file_path: str, is_replace_full: bool) -> str:
     file_name, file_extension = os.path.splitext(os.path.basename(file_path))
 
     if is_replace_full:
-        new_name = "★ " + _get_timestamp + file_extension
+        new_name = "★ " + _get_timestamp() + file_extension
     else:
-        new_name = file_name + " ★ " + _get_timestamp + file_extension
+        new_name = file_name + " ★ " + _get_timestamp() + file_extension
 
     new_path = os.path.join(directory_name, new_name)
 
@@ -99,15 +100,14 @@ def _index_files(to_index: list, is_replace_full: bool):
         enable_bulk_mode(conn)
         with conn:
             token_cache = {}
-            for file_path, is_index in to_index:
+            for file_path in to_index:
                 new_path = _generate_new_path(file_path, is_replace_full)
                 os.rename(file_path, new_path)
 
-                if not is_index:
-                    continue
-
                 extractor = match_extractor(new_path)
-                pages = extractor(new_path, is_tokenize=True)  # must return list[list[str]]
+                if not extractor:
+                    continue
+                pages = [tokenize(page) for page in extractor(new_path)]
                 doc_id = get_or_create_doc_id(conn, new_path)
 
                 for page_idx, tokens in enumerate(pages, start=1):
@@ -146,20 +146,20 @@ def _get_files_without_id(path: str, is_recursive: bool) -> dict:
     try:
         objects = os.listdir(path)
     except FileNotFoundError:
-        return {"number_files_found": files_found, "files_paths": without_id}
+        return {"number_files_found": files_found, "file_paths": without_id}
 
     for file_name in objects:
         full_path = os.path.join(path, file_name)
         if os.path.isdir(full_path) and is_recursive:
             recursive_result = _get_files_without_id(full_path, is_recursive)
-            files_found += recursive_result[0]
-            without_id += recursive_result[1]
+            files_found += recursive_result["number_files_found"]
+            without_id += recursive_result["file_paths"]
         elif os.path.isfile(full_path):
             if "★" not in file_name:
                 if os.stat(full_path).st_size != 0 and match_extractor(full_path) is not None:
-                    without_id.append((full_path, True))
+                    without_id.append(full_path)
                 else:
-                    without_id.append((full_path, False))
+                    without_id.append(full_path)
                 files_found += 1
 
-        return {"number_files_found": files_found, "files_paths": without_id}
+    return {"number_files_found": files_found, "file_paths": without_id}

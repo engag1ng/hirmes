@@ -12,7 +12,7 @@ from collections import defaultdict
 from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
-from backend.database import fetch_postings_for_token # pylint: disable=import-error
+from backend.database import fetch_postings_for_token, fetch_all_documents # pylint: disable=import-error
 # from importlib.resources import files
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
@@ -186,6 +186,29 @@ def _evaluate_and(left: dict, right: dict, result: dict) -> dict:
 
     return result
 
+def _evaluate_not(conn, operand: dict) -> dict:
+    """Evaluate NOT (-) gate and edit result accordingly.
+
+    Args:
+        conn: SQLite3 connection object.
+        operand: Dictionary of token that should be excluded.
+
+    Returns:
+        result: Edited result dictionary.
+    """
+
+    all_docs = fetch_all_documents(conn)
+
+    excluded_paths = set(operand.keys())
+
+    included_docs = all_docs.difference(excluded_paths) 
+
+    result = {
+        doc_path: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set(), "path": ""}
+        for doc_path in included_docs
+    }
+
+    return result
 
 def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
     """Evaluates RPN boolean expression and returns ranked results.
@@ -208,9 +231,14 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
     for token in rpn_tokens:
         if _is_operator(token):
             if token == "not":
-                result = defaultdict(
-                    lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
-                )
+                try:
+                    operand = stack.pop()
+                except IndexError:
+                    conn.close()
+                    return None
+                
+                result = _evaluate_not(conn, operand)
+
                 stack.append(result)
 
             else:

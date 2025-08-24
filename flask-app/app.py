@@ -85,7 +85,6 @@ def api_search():
     query = data.get('query')
     try:
         results = search_index(query)
-        print(results)
         return jsonify({"results": results})
     except Exception: # pylint: disable=broad-exception-caught
         return jsonify({"error": "Invalid query format."}), 400
