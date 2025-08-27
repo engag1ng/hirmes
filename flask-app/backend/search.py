@@ -8,12 +8,12 @@ Typical usage:
 import re
 import os
 import sqlite3
+from importlib.resources import files
 from collections import defaultdict
 from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
 from backend.database import fetch_postings_for_token, fetch_all_documents # pylint: disable=import-error
-from importlib.resources import files
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -21,12 +21,12 @@ os.makedirs(APP_FOLDER, exist_ok=True)
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 LOGICAL_OPERATORS = {"and", "not", "or", "(", ")"}
 
-dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
-bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
+DICTIONARY_PATH = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
+BIGRAM_PATH = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
 
 sym_spell = SymSpell()
-sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
-sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
+sym_spell.load_dictionary(DICTIONARY_PATH, term_index=0, count_index=1)
+sym_spell.load_dictionary(BIGRAM_PATH, term_index=0, count_index=2)
 
 def search_index(query: str) -> tuple | None:
     """Returns ranked matching documents for query and a spellchecked query.
@@ -39,7 +39,7 @@ def search_index(query: str) -> tuple | None:
                 List[{path: str, page_numbers: list, matched_terms: list, snippet: list}] 
         spellchecked_query: String recommendation for "Did You Mean"
     """
-    spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
+    spellchecked_query = spellcheck(query).term
 
     tokenized_query = tokenize_query(query)
     rpn = _to_rpn(tokenized_query)
@@ -55,13 +55,11 @@ def search_index(query: str) -> tuple | None:
 
     return result_docs, spellchecked_query
 
-def spellcheck(text: str, dictionary_path: str, bigram_path: str) -> str:
+def spellcheck(text: str) -> str:
     """Spellcheck text against dictionary and bigram dictionary.
 
     Args:
         text: String to spellcheck
-        dictionary_path: Full path to single word dictionary
-        bigram_path: Full path to bigram dictionary
     
     Returns:
         str: Spellchecked text
@@ -202,7 +200,7 @@ def _evaluate_not(conn, operand: dict) -> dict:
 
     excluded_paths = set(operand.keys())
 
-    included_docs = all_docs.difference(excluded_paths) 
+    included_docs = all_docs.difference(excluded_paths)
 
     result = {
         doc_path: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set(), "path": ""}
@@ -237,7 +235,7 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
                 except IndexError:
                     conn.close()
                     return None
-                
+
                 result = _evaluate_not(conn, operand)
 
                 stack.append(result)

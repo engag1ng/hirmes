@@ -1,6 +1,19 @@
+"""
+Reverts all filename changes and ID assignments.
+"""
+
 import os
 
 def clean(path):
+    """
+    Reverts all filename changes and ID assignments.
+
+    Args:
+        path: String to full path
+
+    Returns:
+        i: Number of changes reverted
+    """
     i = 0
     try:
         entries = os.listdir(path)
@@ -34,7 +47,8 @@ def clean(path):
     return i
 
 if __name__ == '__main__':
-    clean_path = input("Input the path you would like to clean. This includes all subfolders.\ni.e. C:\\Users\\<User>\\Documents\n>>>")
+    clean_path = input("""Input the path you would like to clean.
+    This includes all subfolders.\ni.e. C:\\Users\\<User>\\Documents\n>>>""")
     print("\n")
     renamed_count = clean(clean_path)
     print(f"\n\n\nDone! Cleaned up {renamed_count} files.")

@@ -1,3 +1,21 @@
+# 0.1.2 (2025-08-27)
+## Added
+* "Did You Mean" spellchecking recommendation
+* Database deletion script
+* Style and code guidelines
+* Documentation for functions and modules
+* Pylint for testing
+## Changed
+* Optimised database structure
+* Optimised stoplist access
+## Fixed
+* Window sizes too small
+* Paranthesis not working in queries
+* Searching and indexing failing randomly
+* RPN structure not correct
+* Underscores would cause error in search
+* Fixed spellchecking time
+
 # 0.1.1 (2025-08-09)
 ## Added
 * Splashscreen

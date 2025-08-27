@@ -9,3 +9,7 @@ To find slow parts of code use the `--profile flag` like so:
 # Run single tests
 To run a single test specify the file like so:
 `pytest tests/test_*.py`
+
+# Linting
+1. Lint all files in a directory with `pylint ./<dir>`
+2. Lint single files afterwards with `pylint <file>`

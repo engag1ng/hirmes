@@ -24,9 +24,9 @@ test_cases = [
 
 @pytest.mark.parametrize("query,expected", test_cases)
 def test_spellcheck_correctness(query, expected):
-    dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
+    DICTIONARY_PATH = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
     bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
-    result = spellcheck(query, dictionary_path, bigram_path).term
+    result = spellcheck(query).term
     assert result == expected, f"{query} → {result} (expected {expected})"
 
 query_tests = [

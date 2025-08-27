@@ -21,7 +21,7 @@ from backend.database import ( # pylint: disable=import-error
     disable_bulk_mode,
     get_or_create_doc_id
 )
-from backend.tokenizer import tokenize
+from backend.tokenizer import tokenize # pylint: disable=import-error
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -107,7 +107,10 @@ def _index_files(to_index: list, is_replace_full: bool):
                 extractor = match_extractor(new_path)
                 if not extractor:
                     continue
-                pages = [tokenize(page) for page in extractor(new_path)]
+                content = extractor(new_path)
+                if not content:
+                    continue
+                pages = [tokenize(page) for page in content]
                 doc_id = get_or_create_doc_id(conn, new_path)
 
                 for page_idx, tokens in enumerate(pages, start=1):

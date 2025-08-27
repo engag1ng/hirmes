@@ -62,7 +62,7 @@ def tokenize(content: str) -> list:
             if word:
                 tokens.extend(SPLIT_RE.split(word.lower()))
 
-    filtered_tokens = [t for t in tokens if t and t not in _return_stop_list()]
+    filtered_tokens = [t for t in tokens if t and t not in STOPLIST]
 
     return filtered_tokens + dates + clean_urls
 
@@ -110,3 +110,5 @@ def _return_stop_list() -> set:
     """
     with open(STOPLIST_PATH, 'r', encoding="utf-8") as file:
         return set(file.read().split("\n"))
+
+STOPLIST = _return_stop_list()
