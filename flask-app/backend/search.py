@@ -13,7 +13,7 @@ from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
 from backend.database import fetch_postings_for_token, fetch_all_documents # pylint: disable=import-error
-# from importlib.resources import files
+from importlib.resources import files
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -21,8 +21,15 @@ os.makedirs(APP_FOLDER, exist_ok=True)
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 LOGICAL_OPERATORS = {"and", "not", "or", "(", ")"}
 
-def search_index(query: str) -> list | None:
-    """Returns ranked matching documents for query.
+dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
+bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
+
+sym_spell = SymSpell()
+sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
+sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
+
+def search_index(query: str) -> tuple | None:
+    """Returns ranked matching documents for query and a spellchecked query.
 
     Args:
         query: String combination of search words and logical operators.
@@ -30,13 +37,10 @@ def search_index(query: str) -> list | None:
     Returns:
         result_docs: List of search results
                 List[{path: str, page_numbers: list, matched_terms: list, snippet: list}] 
+        spellchecked_query: String recommendation for "Did You Mean"
     """
+    spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
 
-#   dictionary_path = str(files("symspellpy") / "frequency_dictionary_en_82_765.txt")
-#   bigram_path = str(files("symspellpy") / "frequency_bigramdictionary_en_243_342.txt")
-#   spellchecked_query = spellcheck(query, dictionary_path, bigram_path).term
-#   print(f"spellchecked: {spellchecked_query}")
-#   tokenized_query = tokenize_query(spellchecked_query)
     tokenized_query = tokenize_query(query)
     rpn = _to_rpn(tokenized_query)
     result_docs = _evaluate_rpn_ranked(rpn)
@@ -49,7 +53,7 @@ def search_index(query: str) -> list | None:
         else:
             result["snippet"] = None
 
-    return result_docs
+    return result_docs, spellchecked_query
 
 def spellcheck(text: str, dictionary_path: str, bigram_path: str) -> str:
     """Spellcheck text against dictionary and bigram dictionary.
@@ -63,9 +67,6 @@ def spellcheck(text: str, dictionary_path: str, bigram_path: str) -> str:
         str: Spellchecked text
     """
 
-    sym_spell = SymSpell()
-    sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
-    sym_spell.load_dictionary(bigram_path, term_index=0, count_index=2)
     suggestions = sym_spell.lookup_compound(text, max_edit_distance=2)
 
     return suggestions[0]

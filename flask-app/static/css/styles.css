@@ -118,4 +118,8 @@ th {
   color: var(--text);
 }
 
- tr:nth-child(even) {background-color: var(--bg);} 
+tr:nth-child(even) {background-color: var(--bg);} 
+
+.did-you-mean {
+  display: none;
+}

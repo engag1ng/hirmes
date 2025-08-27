@@ -84,8 +84,8 @@ def api_search():
     data = request.get_json(force=True)
     query = data.get('query')
     try:
-        results = search_index(query)
-        return jsonify({"results": results})
+        results, spellchecked = search_index(query)
+        return jsonify({"results": results, "spellchecked": spellchecked})
     except Exception: # pylint: disable=broad-exception-caught
         return jsonify({"error": "Invalid query format."}), 400
 
