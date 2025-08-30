@@ -9,34 +9,14 @@ from flask import Flask, render_template, request, jsonify
 from waitress import create_server
 from backend.indexer import index_path
 from backend.search import search_index
+from backend.watchdog import run_watchdog
+from backend.settings import load_settings, save_settings
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
 
-SETTINGS_FILE = os.path.join(APP_FOLDER, "config.json")
 server = None # pylint: disable=invalid-name
 
-def _load_settings():
-    """Loads settings from SETTINGS_FILE or creates it if it doesn't exist.
-
-    Returns:
-        dict: Settings with "name": value format.    
-    """
-
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r', encoding="utf-8") as f:
-            return json.load(f)
-    return {"recursive": False, "replace_filename": False}
-
-def _save_settings(settings: dict):
-    """Saves current settings to SETTINGS_FILE.
-
-    Args:
-        settings: In dictionary with "name": value format.
-    """
-
-    with open(SETTINGS_FILE, 'w', encoding="utf-8") as f:
-        json.dump(settings, f)
 
 app = Flask(__name__)
 
@@ -45,7 +25,12 @@ def index_html():
     """Route that renders index.html file.
     """
 
-    settings = _load_settings()
+    settings = load_settings()
+    
+    num_files_reindexed, num_files_deleted, num_files_indexed = (
+        run_watchdog(settings["watchdog_number"])
+    )
+
     return render_template('index.html', settings=settings)
 
 @app.route('/indexing', methods=['POST'])
@@ -64,7 +49,7 @@ def api_indexing():
 
     number_indexed = index_path(path, recursive, replace_filename)
 
-    _save_settings({
+    save_settings({
         "recursive": recursive,
         "replace_filename": replace_filename
     })

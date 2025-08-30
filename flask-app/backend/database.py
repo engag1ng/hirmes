@@ -73,6 +73,51 @@ def get_or_create_doc_id(conn, path: str, metadata=None) -> int:
 
     return doc_id
 
+def get_metadata_from_doc_id(conn, doc_id: int) -> dict | None:
+    """Returns the metadata associated with the doc_id.
+
+    Args:
+        conn: SQLite3 connection object
+        doc_id: Integer document identifier
+
+    Returns:
+        metadata: Dictionary format
+        None: If no metadata exists
+    """
+
+    cur = conn.cursor()
+    cur.execute("SELECT metadata FROM Document WHERE doc_id = ?", (doc_id,))
+    row = cur.fetchone()
+    if row:
+        data = json.loads(row[0])
+        return data
+    else:
+        return None
+
+def update_metadata_from_doc_id(conn, doc_id: int, updates: dict):
+    """
+    Updates the metadata for a certain doc_id
+
+    Args:
+        conn: SQLite3 connection object
+        doc_id: Int Document indentifier
+        updates: Dict with key: value updates
+    """
+    cur = conn.cursor()
+    cur.execute("SELECT metadata FROM Document WHERE doc_id = ?", (doc_id,))
+    row = cur.fetchone()
+
+    if not row:
+        return
+
+    metadata = json.loads(row[0])
+    metadata.update(updates)
+
+    cur.execute(
+        "UPDATE Document SET metadata = ? WHERE doc_id = ?",
+        (json.dumps(metadata), doc_id)
+    )
+
 def get_path_from_doc_id(conn, doc_id: int) -> str | None:
     """Retrieves path for doc_id from Document table.
 
@@ -235,3 +280,34 @@ def fetch_all_documents(conn) -> set:
     result = {row[0] for row in cursor.fetchall()}
 
     return result
+
+def delete_postings_for_doc_id(conn, doc_id: int):
+    """Deletes all postings for doc_id.
+
+    Args:
+        conn: SQLite3 connection object
+        doc_id: Integer document indentifier
+    """
+
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM Posting
+        WHERE doc_id = ?
+    """, (doc_id,))
+
+def delete_documents(conn, to_delete: list):
+    """Deletes all Documents from to_delete.
+
+    Args:
+        conn: SQLite3 connection object
+        to_delete: List of paths to documents.
+    """
+
+    if not to_delete:  # nothing to delete
+        return
+
+    cur = conn.cursor()
+    placeholders = ",".join("?" * len(to_delete))
+    query = f"DELETE FROM Document WHERE path IN ({placeholders})"
+    cur.execute(query, tuple(to_delete))
+    conn.commit()

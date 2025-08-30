@@ -19,7 +19,10 @@ from backend.database import ( # pylint: disable=import-error
     enable_bulk_mode,
     bulk_upsert_postings,
     disable_bulk_mode,
-    get_or_create_doc_id
+    get_or_create_doc_id,
+    delete_postings_for_doc_id,
+    delete_documents,
+    update_metadata_from_doc_id
 )
 from backend.tokenizer import tokenize # pylint: disable=import-error
 
@@ -111,7 +114,8 @@ def _index_files(to_index: list, is_replace_full: bool):
                 if not content:
                     continue
                 pages = [tokenize(page) for page in content]
-                doc_id = get_or_create_doc_id(conn, new_path)
+                metadata = {"last_indexed": str(datetime.datetime.today())}
+                doc_id = get_or_create_doc_id(conn, new_path, metadata=metadata)
 
                 for page_idx, tokens in enumerate(pages, start=1):
                     counts = Counter(tokens)                     # token -> tf (on that page)
@@ -123,6 +127,7 @@ def _index_files(to_index: list, is_replace_full: bool):
                         _token_cache=token_cache
                     )
     finally:
+        conn.commit()
         disable_bulk_mode(conn)
         conn.close()
 
@@ -166,3 +171,52 @@ def _get_files_without_id(path: str, is_recursive: bool) -> dict:
                 files_found += 1
 
     return {"number_files_found": files_found, "file_paths": without_id}
+
+def repeat_indexing(conn, to_index: list) -> tuple[int]:
+    """Given a list of file paths, reindexes documents
+
+    Args:
+        conn: SQLite3 connection object
+        to_index: List of file paths in str format
+
+    Returns:
+        (int, int): Number of files reindexed, files deleted from database
+    """
+    files_reindexed = 0 
+    to_delete = []
+    initialise_db(conn)
+    enable_bulk_mode(conn)
+    with conn:
+        token_cache = {}
+        for file_path in to_index:
+            doc_id = get_or_create_doc_id(conn, file_path)
+            delete_postings_for_doc_id(conn, doc_id)
+            if not os.path.isfile(file_path):
+                to_delete.append(file_path)
+                continue
+            extractor = match_extractor(file_path)
+            if not extractor:
+                continue
+            content = extractor(file_path)
+            if not content:
+                continue
+            pages = [tokenize(page) for page in content]
+            doc_id = get_or_create_doc_id(conn, file_path)
+            update_metadata_from_doc_id(conn, doc_id, {"last_indexed": str(datetime.datetime.today())})
+
+            for page_idx, tokens in enumerate(pages, start=1):
+                counts = Counter(tokens)                     # token -> tf (on that page)
+                token_tf_pairs = list(counts.items())
+                bulk_upsert_postings(
+                    conn,
+                    token_tf_pairs,
+                    doc_id, page_idx,
+                    _token_cache=token_cache
+                )
+            files_reindexed += 1
+
+    delete_documents(conn, to_delete)
+    conn.commit()
+    disable_bulk_mode(conn)
+    
+    return files_reindexed, len(to_delete)
