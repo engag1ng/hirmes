@@ -1,9 +1,16 @@
-document.getElementById("indexForm").addEventListener("submit", function(e) {
+document.getElementById("indexForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
     const path = document.getElementById("path").value;
     const recursive = document.getElementById("recursive").checked;
     const replaceFilename = document.getElementById("replace_filename").checked;
+
+    if (replaceFilename) {
+        const confirmed = await showPopup("Are you sure you want to replace the FULL filename? This cannot be reverted!", true);
+        if (!confirmed) {
+            return;
+        }
+    }
 
     fetch("/indexing", {
         method: "POST",
