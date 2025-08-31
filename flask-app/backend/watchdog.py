@@ -75,7 +75,7 @@ def _check_watchdog_list() -> int:
     number_files_indexed = 0
     settings = load_settings()
     is_recursive = settings["recursive"]
-    is_replace_full = settings["replace_filename"]
+    is_replace_full = False
     try:
         open(WATCHDOG_PATH, 'x')
     except FileExistsError:
