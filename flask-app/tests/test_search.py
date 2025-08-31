@@ -1,5 +1,5 @@
 import pytest
-from backend.search import spellcheck, search_index, _search_snippet
+from backend.search import spellcheck, search_index
 from importlib.resources import files
 from symspellpy import SymSpell
 
