@@ -1,5 +1,5 @@
 import pytest
-from backend.search import spellcheck, search_index
+from backend.search import spellcheck, search_index, _search_snippet
 from importlib.resources import files
 from symspellpy import SymSpell
 
@@ -39,5 +39,5 @@ query_tests = [
 
 def test_search_speed():
     for query in query_tests:
-        result = search_index(query)
-    assert result != "Error"
+        results, spellchecked_query = search_index(query)
+        assert results and spellchecked_query
