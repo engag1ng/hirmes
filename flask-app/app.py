@@ -8,7 +8,7 @@ import threading
 from flask import Flask, render_template, request, jsonify
 from waitress import create_server
 from backend.indexer import index_path
-from backend.search import search_index
+from backend.search import search_index, make_full_text
 from backend.watchdog import run_watchdog
 from backend.settings import load_settings, save_settings
 
@@ -67,7 +67,10 @@ def api_search():
     """
 
     data = request.get_json(force=True)
+    full_text = data.get('full_text', False)
     query = data.get('query')
+    if full_text:
+        query = make_full_text(query)
     try:
         results, spellchecked = search_index(query)
         return jsonify({"results": results, "spellchecked": spellchecked})

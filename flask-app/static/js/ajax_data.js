@@ -32,8 +32,9 @@ document.getElementById("searchForm").addEventListener("submit", function(e) {
     e.preventDefault();
 
     const query = document.getElementById("query").value;
+    const fullText = document.getElementById("full_text").checked;
 
-    callSearch(query);
+    callSearch(query, fullText);
 });
 
 function displaySearchResults(results) {
@@ -61,12 +62,13 @@ function displaySearchResults(results) {
     document.body.appendChild(container);
 }
 
-function callSearch(query) {
+function callSearch(query, full_text) {
     fetch(`/search`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             query: query,
+            full_text: full_text,
         })
     })
     .then(res => res.json())

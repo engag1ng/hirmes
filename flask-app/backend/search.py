@@ -47,11 +47,12 @@ def search_index(query: str) -> tuple | None:
     if not result_docs:
         return None
 
+
     for result_number, result in enumerate(result_docs):
         if result_number < 5:
             result["snippet"] = _search_snippet(result)
         else:
-            result["snippet"] = None
+            result["snippet"] = []
 
     return result_docs, spellchecked_query
 
@@ -361,3 +362,15 @@ def _context_windows(text: str, word: str, n: int = 5) -> list:
     )
 
     return re.findall(pattern, text, flags=re.IGNORECASE)
+
+def make_full_text(query: str) -> str:
+    split_query = query.split()
+    new_query = []
+    
+    for i, word in enumerate(split_query):
+        new_query.append(word)
+        if i+1 != len(split_query):
+            new_query.append('AND')
+    
+    full_text_query = " ".join(new_query)
+    return full_text_query
