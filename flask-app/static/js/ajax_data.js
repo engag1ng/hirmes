@@ -12,6 +12,22 @@ document.getElementById("indexForm").addEventListener("submit", async function(e
         }
     }
 
+    const overlay = document.getElementById("progressOverlay");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+
+    overlay.style.display = "flex";
+    progressBar.value = 0;
+    progressText.textContent = "Indexing in progress...";
+
+    // Fake progress until request finishes
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress = Math.min(progress + Math.random() * 10, 95);
+        progressBar.value = progress;
+        progressText.textContent = `Indexing... ${Math.floor(progress)}%`;
+    }, 500);
+
     fetch("/indexing", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -23,9 +39,22 @@ document.getElementById("indexForm").addEventListener("submit", async function(e
     })
     .then(res => res.json())
     .then(data => {
+        clearInterval(interval);
+        progressBar.value = 100;
+        progressText.textContent = "Completed!";
         showPopup(`Indexed ${data.indexed_count} file(s).`);
     })
-    .catch(() => showPopup("Indexing failed!"));
+    .catch(() => {
+        clearInterval(interval);
+        progressBar.value = 0;
+        progressText.textContent = "Failed!";
+        showPopup("Indexing failed!")
+    })
+    .finally(() => {
+        setTimeout(() => {
+            overlay.style.display = "none";
+        }, 800);
+    });
 });
 
 document.getElementById("searchForm").addEventListener("submit", function(e) {
@@ -35,6 +64,17 @@ document.getElementById("searchForm").addEventListener("submit", function(e) {
     const fullText = document.getElementById("full_text").checked;
 
     callSearch(query, fullText);
+});
+
+document.addEventListener("keydown", function(e) {
+    const overlay = document.getElementById("progressOverlay");
+    if (overlay.style.display == "flex" && e.key === "Escape") {
+        e.preventDefault();
+    }
+});
+
+document.getElementById("progressOverlay").addEventListener("click", function(e) {
+    e.stopPropagation();
 });
 
 function displaySearchResults(results) {
