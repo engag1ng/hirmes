@@ -1,3 +1,12 @@
+# 0.2.0 (2025-09-05)
+## Added
+* Watchdog that automatically finds, removes and reindexes files
+* Extra confirm popup for destructive features
+* Full text search checkbutton
+* Indexing progress bar
+## Changed
+* Search tests are more refined
+
 # 0.1.2 (2025-08-27)
 ## Added
 * "Did You Mean" spellchecking recommendation

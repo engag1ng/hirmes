@@ -45,7 +45,7 @@ def search_index(query: str) -> tuple | None:
     rpn = _to_rpn(tokenized_query)
     result_docs = _evaluate_rpn_ranked(rpn)
     if not result_docs:
-        return None
+        return [], spellchecked_query
 
 
     for result_number, result in enumerate(result_docs):

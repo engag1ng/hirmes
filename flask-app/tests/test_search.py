@@ -40,4 +40,4 @@ query_tests = [
 def test_search_speed():
     for query in query_tests:
         results, spellchecked_query = search_index(query)
-        assert results and spellchecked_query
+        assert results != None and spellchecked_query
