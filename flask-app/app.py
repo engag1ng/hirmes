@@ -33,6 +33,14 @@ def index_html():
 
     return render_template('index.html', settings=settings)
 
+@app.route('/settings')
+def settings_html():
+    """Route that renders settings menu
+    """
+
+    settings = load_settings()
+    return render_template('settings.html', settings=settings)
+
 @app.route('/indexing', methods=['POST'])
 def api_indexing():
     """Route for indexing files.
@@ -93,6 +101,7 @@ def shutdown():
 
     threading.Thread(target=shutdown_server).start()
     return jsonify({"message": "Sever is shutting down"}), 200
+
 
 def _run_server():
     """Creates WSGI server at 127.0.0.1:5000 and runs it.

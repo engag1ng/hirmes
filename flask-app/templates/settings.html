@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme-toggle.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/popup.js') }}" defer></script>
+</head>
+<body>
+    <h1>Settings</h1>
+    <button
+        type="button"
+        id="theme-toggle"
+        title="Toggle light/dark mode"
+        >🌞
+    </button>
+    <button
+        type="button"
+        id="back-to-index"
+        title="Return to main page"
+        onclick="goToIndex()"
+        >🔙
+    </button>
+
+    </button>
+
+    <div style="display: flex; justify-content: space-around">
+        <div>
+            <p>Watchdog</p>
+            <input type="range" id="watchdog_number" name="watchdog_number" min="0", max="200" value="{{ settings.watchdog_number }}" />
+            <label for="watchdog_number">Files to reindex at every startup</label>
+        </div>
+    </div>
+
+    <!-- Popup structure -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-box">
+            <p id="popupMessage">Hello!</p>
+            <button onclick="closePopup()">Close</button>
+            <button id="yesButton" onclick="closePopup()" style="display: none;">Yes</button>
+        </div>
+    </div>
+</body>
+<script>
+    function goToIndex() {
+        window.location.href = "/";
+    }
+</script>
+</html>

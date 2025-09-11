@@ -2,7 +2,7 @@
 <html data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <title>Information Retrieval</title>
+    <title>Hirmes</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/theme-toggle.js') }}" defer></script>
@@ -16,6 +16,13 @@
         id="theme-toggle"
         title="Toggle light/dark mode"
         >🌞
+    </button>
+    <button
+        type="button"
+        id="settings-button"
+        title="Go to settings"
+        onclick="goToSettings()"
+        >⚙️
     </button>
 
     <div style="display: flex; justify-content: space-around">
@@ -70,4 +77,9 @@
     </div>
 
 </body>
+<script>
+    function goToSettings() {
+        window.location.href = "/settings";
+    }
+</script>
 </html>
