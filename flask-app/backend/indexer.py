@@ -6,7 +6,7 @@ Provides functions for indexing all files in a folder with or without subfolders
 Typical usage:
     from backend.indexer import index_path
 
-    files_indexed = index_files(path, is_recursive=True, is_replace_full=False)
+    files_indexed = index_files(path, is_recursive=True)
 """
 
 import os
@@ -22,7 +22,8 @@ from backend.database import ( # pylint: disable=import-error
     get_or_create_doc_id,
     delete_postings_for_doc_id,
     delete_documents,
-    update_metadata_from_doc_id
+    update_metadata_from_doc_id,
+    fetch_all_documents
 )
 from backend.tokenizer import tokenize # pylint: disable=import-error
 
@@ -31,7 +32,7 @@ os.makedirs(APP_FOLDER, exist_ok=True)
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
-def index_path(path: str, is_recursive: bool, is_replace_full: bool) -> int:
+def index_path(path: str, is_recursive: bool) -> int:
     """Indexes all files in a folder. Can be recursive.
 
     While indexing files get both renamed with a unique timestamp based ID
@@ -41,8 +42,6 @@ def index_path(path: str, is_recursive: bool, is_replace_full: bool) -> int:
         path: String denoting the relative or full path of a folder that should
                 be indexed. 
         is_recursive: Boolean indicating if indexing is done recursively.
-        is_replace_full: Boolean indicating if full filename will be 
-                replaced with ID.
 
     Returns:
         number_files_found: Integer of how many files got indexed.
@@ -51,7 +50,7 @@ def index_path(path: str, is_recursive: bool, is_replace_full: bool) -> int:
     result = _get_files_without_id(path, is_recursive)
     number_files_found = result["number_files_found"]
     files_without_id = result["file_paths"]
-    _index_files(files_without_id, is_replace_full)
+    _index_files(files_without_id)
 
     return number_files_found
 
@@ -63,38 +62,11 @@ def _get_timestamp():
 
     return datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")
 
-def _generate_new_path(file_path: str, is_replace_full: bool) -> str:
-    """Generates a new path with timestamp ID.
-
-    Args:
-        file_path: String of original file path.
-        is_replace_full: Boolean if full name should be replaced.
-    Returns:
-        new_path: String of new path with timestamp ID.
-    """
-
-    directory_name = os.path.dirname(file_path)
-    file_name, file_extension = os.path.splitext(os.path.basename(file_path))
-
-    if is_replace_full:
-        new_name = "★ " + _get_timestamp() + file_extension
-    else:
-        new_name = file_name + " ★ " + _get_timestamp() + file_extension
-
-    new_path = os.path.join(directory_name, new_name)
-
-    return new_path
-
-def _index_files(to_index: list, is_replace_full: bool):
-    """Renames and indexes all files in to_index.
-
-    Exempt are files with a tuple value like this (path, False).
-    These are only renamed and not indexed.
+def _index_files(to_index: list):
+    """Indexes all files in to_index.
 
     Args:
         to_index: List of tuples (full_path, is_index)
-        is_replace_full: Boolean indicating whether full filename
-                is going to be replaced.
     """
 
     conn = sqlite3.connect(DB_PATH)
@@ -104,18 +76,15 @@ def _index_files(to_index: list, is_replace_full: bool):
         with conn:
             token_cache = {}
             for file_path in to_index:
-                new_path = _generate_new_path(file_path, is_replace_full)
-                os.rename(file_path, new_path)
-
-                extractor = match_extractor(new_path)
+                extractor = match_extractor(file_path)
                 if not extractor:
                     continue
-                content = extractor(new_path)
+                content = extractor(file_path)
                 if not content:
                     continue
                 pages = [tokenize(page) for page in content]
                 metadata = {"last_indexed": str(datetime.datetime.today())}
-                doc_id = get_or_create_doc_id(conn, new_path, metadata=metadata)
+                doc_id = get_or_create_doc_id(conn, file_path, metadata=metadata)
 
                 for page_idx, tokens in enumerate(pages, start=1):
                     counts = Counter(tokens)                     # token -> tf (on that page)
@@ -132,7 +101,7 @@ def _index_files(to_index: list, is_replace_full: bool):
         conn.close()
 
 def _get_files_without_id(path: str, is_recursive: bool) -> dict:
-    """Finds all files in path that don't have an ID.
+    """Finds all files in path that are not indexed.
 
     Can be set to be recursive.
 
@@ -148,8 +117,10 @@ def _get_files_without_id(path: str, is_recursive: bool) -> dict:
                     or just renamed.
     """
 
+    conn = sqlite3.connect(DB_PATH)
     files_found = 0
     without_id = []
+    all_indexed = fetch_all_documents(conn)
 
     try:
         objects = os.listdir(path)
@@ -163,7 +134,7 @@ def _get_files_without_id(path: str, is_recursive: bool) -> dict:
             files_found += recursive_result["number_files_found"]
             without_id += recursive_result["file_paths"]
         elif os.path.isfile(full_path):
-            if "★" not in file_name:
+            if full_path not in all_indexed:
                 if os.stat(full_path).st_size != 0 and match_extractor(full_path) is not None:
                     without_id.append(full_path)
                 else:

@@ -267,13 +267,13 @@ def _term_doc_map(conn, token: str) -> dict:
 
 def fetch_all_documents(conn) -> set:
     """
-    Fetch all document IDs in the collection.
+    Fetch all paths in the collection.
 
     Args:
         conn: SQLite3 connection object.
 
     Returns:
-        set of doc_ids
+        set of paths 
     """
     cursor = conn.cursor()
     cursor.execute("SELECT path FROM Document")

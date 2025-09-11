@@ -3,14 +3,6 @@ document.getElementById("indexForm").addEventListener("submit", async function(e
 
     const path = document.getElementById("path").value;
     const recursive = document.getElementById("recursive").checked;
-    const replaceFilename = document.getElementById("replace_filename").checked;
-
-    if (replaceFilename) {
-        const confirmed = await showPopup("Are you sure you want to replace the FULL filename? This cannot be reverted!", true);
-        if (!confirmed) {
-            return;
-        }
-    }
 
     const overlay = document.getElementById("progressOverlay");
     const progressBar = document.getElementById("progressBar");
@@ -34,7 +26,6 @@ document.getElementById("indexForm").addEventListener("submit", async function(e
         body: JSON.stringify({
             path: path,
             recursive: recursive,
-            replace_filename: replaceFilename
         })
     })
     .then(res => res.json())

@@ -75,13 +75,12 @@ def _check_watchdog_list() -> int:
     number_files_indexed = 0
     settings = load_settings()
     is_recursive = settings["recursive"]
-    is_replace_full = False
     try:
         open(WATCHDOG_PATH, 'x')
     except FileExistsError:
         with open(WATCHDOG_PATH, 'r', encoding="UTF-8") as file:
             content = file.readlines()
         for path in content:
-            number_files_indexed += index_path(path, is_recursive, is_replace_full)
+            number_files_indexed += index_path(path, is_recursive)
 
     return number_files_indexed

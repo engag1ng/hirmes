@@ -19,7 +19,7 @@ def load_settings():
     if os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, 'r', encoding="utf-8") as f:
             return json.load(f)
-    return {"recursive": False, "replace_filename": False, "watchdog_number": 50}
+    return {"recursive": False, "watchdog_number": 50}
 
 def save_settings(updates: dict):
     """Saves current settings to SETTINGS_FILE.

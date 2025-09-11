@@ -45,13 +45,11 @@ def api_indexing():
     data = request.get_json(force=True)
     path = data.get('path')
     recursive = data.get('recursive', False)
-    replace_filename = data.get('replace_filename', False)
 
-    number_indexed = index_path(path, recursive, replace_filename)
+    number_indexed = index_path(path, recursive)
 
     save_settings({
         "recursive": recursive,
-        "replace_filename": replace_filename
     })
 
     return jsonify({"indexed_count": number_indexed})
