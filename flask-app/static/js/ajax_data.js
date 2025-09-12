@@ -82,7 +82,7 @@ function displaySearchResults(results) {
             </tr>
             ${results.map(row => `
                 <tr>
-                    <td>${row.path}</td>
+                    <td><a href="#" class="open-file" data-path="${row.path}">${row.path}</a></td>
                     <td>${row.page_numbers.join(", ")}</td>
                     <td><ul>${row.match_terms.map(t => `<li>${t}</li>`).join('')}</ul></td>
                     <td><ul>${row.snippet.map(s => `<li>${s}</li>`).join('')}</ul></td>
@@ -90,6 +90,12 @@ function displaySearchResults(results) {
             `).join('')}
         </table>
     `;
+    container.querySelectorAll('.open-file').forEach(a => {
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            openFile(a.dataset.path);
+        });
+    });
     document.body.appendChild(container);
 }
 
@@ -128,4 +134,19 @@ function closeDidYouMean() {
     const query = document.getElementById('didYouMeanText').textContent.split(":")[1].trim();
     callSearch(query)
     document.getElementById('didYouMean').style.display = 'none';
+}
+
+async function openFile(path) {
+  try {
+    const res = await fetch('/open-file', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unknown error');
+  } catch (err) {
+    console.error('Error opening file', err.message);
+  }
 }

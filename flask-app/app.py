@@ -33,6 +33,25 @@ def index_html():
 
     return render_template('index.html', settings=settings)
 
+@app.route('/open-file', methods=['POST'])
+def open_file():
+    data = request.get_json(force=True)
+    filename = data.get('path')
+    if not filename:
+        return jsonify(error='No path provided'), 400
+
+    file_path = os.path.abspath(filename)
+
+    if not os.path.isfile(file_path):
+        return jsonify(error='File not found'), 404
+
+    try:
+        os.startfile(file_path)
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+    return jsonify(status='ok', file=file_path), 200
+
 @app.route('/settings')
 def settings_html():
     """Route that renders settings menu
