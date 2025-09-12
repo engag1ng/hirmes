@@ -28,11 +28,16 @@
     </button>
 
     <div style="display: flex; justify-content: space-around">
+        <form id="settings-form" method="POST" action="/settings/save">
         <div>
-            <p>Watchdog</p>
-            <input type="range" id="watchdog_number" name="watchdog_number" min="0", max="200" value="{{ settings.watchdog_number }}" />
-            <label for="watchdog_number">Files to reindex at every startup</label>
+            <p><b>Watchdog</b></p>
+            <input type="range" id="watchdog_number" name="watchdog_number" min="0", max="200" value="{{ settings.watchdog_number if settings else 50 }}" oninput="this.nextElementSibling.value = this.value" />
+            <output>{{ settings.watchdog_number }}</output><br>
+            <label for="watchdog_number">Files reindexed at startup</label>
         </div>
+
+        <button type="submit">Save</button>
+        </form>
     </div>
 
     <!-- Popup structure -->

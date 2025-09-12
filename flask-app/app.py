@@ -5,7 +5,7 @@ Main Flask application file including routes and functions.
 import json
 import os
 import threading
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from waitress import create_server
 from backend.indexer import index_path
 from backend.search import search_index, make_full_text
@@ -40,6 +40,17 @@ def settings_html():
 
     settings = load_settings()
     return render_template('settings.html', settings=settings)
+
+@app.route('/settings/save', methods=['POST'])
+def api_save_settings():
+    """Route for saving settings.
+    """
+
+    save_settings({
+        "watchdog_number": request.form.get('watchdog_number'),
+    })
+
+    return redirect(url_for("settings_html"))
 
 @app.route('/indexing', methods=['POST'])
 def api_indexing():
