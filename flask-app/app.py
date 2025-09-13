@@ -12,6 +12,8 @@ from backend.search import search_index, make_full_text
 from backend.watchdog import run_watchdog
 from backend.settings import load_settings, save_settings
 
+from blueprints.tagging import bp as tagging_bp
+
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
 
@@ -19,6 +21,7 @@ server = None # pylint: disable=invalid-name
 
 
 app = Flask(__name__)
+app.register_blueprint(tagging_bp)
 
 @app.route('/')
 def index_html():

@@ -2,7 +2,7 @@
 Index database search and spellcheck utilities.
 
 Typical usage:
-    results = search_index(query)
+    results, spellchecked = search_index(query)
 """
 
 import re
@@ -14,6 +14,7 @@ from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
 from backend.database import fetch_postings_for_token, fetch_all_documents # pylint: disable=import-error
+from backend.system import template_exists
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -263,7 +264,7 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
 
         else:
             doc_map = defaultdict(
-                lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
+                lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set(), "tags": set()}
             )
             for doc_path, page, tf in fetch_postings_for_token(conn, token):
                 doc_map[doc_path]["match_count"] += 1

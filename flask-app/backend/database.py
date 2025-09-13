@@ -73,7 +73,7 @@ def get_or_create_doc_id(conn, path: str, metadata=None) -> int:
 
     return doc_id
 
-def get_metadata_from_doc_id(conn, doc_id: int) -> dict | None:
+def get_metadata_from_doc_id_or_path(conn, doc_id: int = None, path: str = None) -> dict | None:
     """Returns the metadata associated with the doc_id.
 
     Args:
@@ -86,7 +86,12 @@ def get_metadata_from_doc_id(conn, doc_id: int) -> dict | None:
     """
 
     cur = conn.cursor()
-    cur.execute("SELECT metadata FROM Document WHERE doc_id = ?", (doc_id,))
+    if doc_id:
+        cur.execute("SELECT metadata FROM Document WHERE doc_id = ?", (doc_id,))
+    elif path:
+        cur.execute("SELECT metadata FROM Document WHERE path= ?", (path,))
+    else:
+        return None
     row = cur.fetchone()
     if row:
         data = json.loads(row[0])

@@ -7,9 +7,17 @@ Typical usage:
 
 import os
 import sys
+from jinja2 import TemplateNotFound
 
 def get_resource_path(file_name):
     """ Get the path to a bundled resource (works in dev and PyInstaller) """
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, file_name) # pylint: disable=protected-access
     return os.path.join(os.path.abspath("."), file_name)
+
+def template_exists(app, template_name):
+    try:
+        app.jinja_loader.get_source(app.jinja_env, template_name)
+        return True
+    except TemplateNotFound:
+        return False
