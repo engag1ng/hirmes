@@ -1,16 +1,16 @@
+
 <!DOCTYPE html>
 <html data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <title>Hirmes</title>
+    <title>Tagging</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/theme-toggle.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/popup.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/ajax_data.js') }}" defer></script>
 </head>
 <body>
-    <h1>Information Retrieval system</h1>
+    <h1>Tagging</h1>
     <button
         type="button"
         id="theme-toggle"
@@ -19,45 +19,17 @@
     </button>
     <button
         type="button"
-        id="settings-button"
-        title="Go to settings"
-        onclick="goToSettings()"
-        >⚙️
-    </button>
-    <button
-        type="button"
-        id="tagging-button"
-        title="Go to tagging"
-        onclick="goToTagging()"
-        style="display: none"
-    >Tagging
+        id="back-to-index"
+        title="Return to main page"
+        onclick="goToIndex()"
+        >🔙
     </button>
 
     <div style="display: flex; justify-content: space-around">
         <div>
-            <h2>Indexer</h2>
-            <form id="indexForm">
-                <label for="path">Path:</label>
-                <input type="text" id="path" name="path" required><br><br>
-
-                <label>
-                    <input type="checkbox" id="recursive" {% if settings and settings.recursive %}checked{% endif %}>
-                    Include Subfolders
-                </label>
-                <br><br>
-
-                <button type="submit">Index</button>
-            </form>
-        </div>
-
-        <div>
             <h2>Search Files</h2>
             <form id="searchForm">
                 <input type="text" id="query" name="query" placeholder="Search..." required>
-                <label>
-                    <input type="checkbox" id="full_text">
-                    Full Text Search
-                </label>
                 <button type="submit">Search</button>
             </form>
             <div class="did-you-mean" id="didYouMean">
@@ -86,25 +58,8 @@
 
 </body>
 <script>
-    function goToSettings() {
-        window.location.href = "/settings";
+    function goToIndex() {
+        window.location.href = "/";
     }
-
-    function goToTagging() {
-        window.location.href="/tagging";
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        fetch("/tagging/check", { method: "OPTIONS" })
-        .then(res => {
-            if (!res.ok) throw new Error("Tagging route not available");
-            const button = document.getElementById("tagging-button");
-            button.style.display = "flex";
-        })
-        .catch(err => {
-            console.error("Tagging route missing:", err);
-            document.querySelectorAll(".tagging-header, .tagging-cell").forEach(el => el.remove());
-        });
-    });
 </script>
 </html>
