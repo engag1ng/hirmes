@@ -1,7 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::process::{Command, Stdio};
+use std::{fs, path::PathBuf};
 use tauri::{Manager};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
 fn send_shutdown_signal() {
     let client = reqwest::blocking::Client::new();
@@ -14,7 +16,23 @@ fn send_shutdown_signal() {
 
 fn main() {
     tauri::Builder::default()
+	.plugin(tauri_plugin_autostart::init(
+        	MacosLauncher::LaunchAgent,
+        	None,
+    	))
         .setup(|app| {
+            let app_dir: PathBuf = app.path_resolver().app_data_dir().unwrap();
+            let flag_file = app_dir.join("autostart_enabled");
+
+            if !flag_file.exists() {
+                let autostart = app.autolaunch();
+                autostart.enable().expect("Failed to enable autostart");
+
+                fs::create_dir_all(&app_dir)?;
+                fs::write(&flag_file, "enabled")?;
+                println!("Autostart enabled (first run)");
+            }
+
             // Start Flask server
             Command::new("bin/app.exe")
                 .stdout(Stdio::null())
