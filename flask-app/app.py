@@ -122,7 +122,7 @@ def api_search():
         results, spellchecked = search_index(query)
         return jsonify({"results": results, "spellchecked": spellchecked})
     except Exception: # pylint: disable=broad-exception-caught
-        return jsonify({"error": "Invalid query format."}), 400
+        return jsonify({"error": "An error occurred. Check query format."}), 400
 
 @app.route('/shutdown', methods=["GET"])
 def shutdown():

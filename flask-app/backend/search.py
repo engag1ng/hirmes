@@ -13,7 +13,7 @@ from collections import defaultdict
 from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
-from backend.database import fetch_postings_for_token, fetch_all_documents # pylint: disable=import-error
+from backend.database import fetch_postings_for_token, fetch_all_documents, delete_documents # pylint: disable=import-error
 from backend.system import template_exists
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
@@ -48,13 +48,23 @@ def search_index(query: str) -> tuple | None:
     if not result_docs:
         return [], spellchecked_query
 
-
-    for result_number, result in enumerate(result_docs):
+    result_number = 0
+    to_delete = []
+    for result in result_docs:
+        if not os.path.isfile(result["path"]):
+            to_delete.append(result["path"])
+            result_docs.remove(result)
+            continue
+        result_number += 1
         if result_number < 5:
             result["snippet"] = _search_snippet(result)
         else:
             result["snippet"] = []
 
+    conn = sqlite3.connect(DB_PATH)
+    delete_documents(conn, to_delete)
+    conn.commit()
+    conn.close()
     return result_docs, spellchecked_query
 
 def spellcheck(text: str) -> str:
