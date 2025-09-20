@@ -79,7 +79,7 @@ def _check_watchdog_list() -> int:
         open(WATCHDOG_PATH, 'x')
     except FileExistsError:
         with open(WATCHDOG_PATH, 'r', encoding="UTF-8") as file:
-            content = file.readlines()
+            content = [path.strip("\n") for path in file.readlines() if path != "\n"]
         for path in content:
             number_files_indexed += index_path(path, is_recursive)
 

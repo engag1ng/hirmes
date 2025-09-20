@@ -79,6 +79,7 @@ function displaySearchResults(results) {
                 <th>Pages</th>
                 <th>Terms matched</th>
                 <th>Snippets</th>
+                <th>Tags</th>
             </tr>
             ${results.map(row => `
                 <tr>

@@ -1,9 +1,9 @@
 import os
 import sqlite3
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, url_for
 from backend.database import get_metadata_from_doc_id_or_path
 
-bp = Blueprint("tagging", __name__, url_prefix="/tagging", template_folder='static/templates')
+bp = Blueprint("tagging", __name__, url_prefix="/tagging", static_folder="static", template_folder="static/templates")
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)

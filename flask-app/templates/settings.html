@@ -33,7 +33,9 @@
             <p><b>Watchdog</b></p>
             <input type="range" id="watchdog_number" name="watchdog_number" min="0", max="200" value="{{ settings.watchdog_number if settings else 50 }}" oninput="this.nextElementSibling.value = this.value" />
             <output>{{ settings.watchdog_number }}</output><br>
-            <label for="watchdog_number">Files reindexed at startup</label>
+            <label for="watchdog_number">Files reindexed at startup</label><br><br>
+            <textarea id="watchdog_list" name="watchdog_list" cols="50" rows="10" wrap="hard">{{ watchdog_list if watchdog_list }}</textarea><br>
+            <label for="watchdog_list">Folders watched for changes</label>
         </div>
 
         <button type="submit">Save</button>

@@ -17,8 +17,9 @@ from blueprints.tagging import bp as tagging_bp
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
 
-server = None # pylint: disable=invalid-name
+WATCHDOG_FILE = os.path.join(APP_FOLDER, "watchdog.txt")
 
+server = None # pylint: disable=invalid-name
 
 app = Flask(__name__)
 app.register_blueprint(tagging_bp)
@@ -61,7 +62,12 @@ def settings_html():
     """
 
     settings = load_settings()
-    return render_template('settings.html', settings=settings)
+    if os.path.exists(WATCHDOG_FILE):
+        with open(WATCHDOG_FILE, 'r', encoding="utf-8") as f:
+            watchdog_list = ''.join(f.readlines())
+    else:
+        watchdog_list = ""
+    return render_template('settings.html', settings=settings, watchdog_list=watchdog_list)
 
 @app.route('/settings/save', methods=['POST'])
 def api_save_settings():
@@ -71,6 +77,8 @@ def api_save_settings():
     save_settings({
         "watchdog_number": request.form.get('watchdog_number'),
     })
+    with open(WATCHDOG_FILE, 'w', encoding="utf-8") as f:
+        f.write(request.form.get('watchdog_list'))
 
     return redirect(url_for("settings_html"))
 
