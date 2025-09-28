@@ -2,7 +2,7 @@
 
 use std::process::{Command, Stdio};
 use std::{fs, path::PathBuf};
-use tauri::{Manager};
+use tauri::{Manager, GlobalShortcutManager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
 fn send_shutdown_signal() {
@@ -41,6 +41,23 @@ fn main() {
                 .expect("Failed to launch backend");
 
             let app_handle = app.handle();
+
+	    {
+                let app_handle = app_handle.clone();
+                let mut gsm = app.global_shortcut_manager();
+
+                gsm.register("Ctrl+Shift+Space", move || {
+                    if let Some(window) = app_handle.get_window("main") {
+                        let is_visible = window.is_visible().unwrap_or(false);
+                        if is_visible {
+                            window.hide().unwrap();
+                        } else {
+                            window.show().unwrap();
+                            window.set_focus().unwrap();
+                        }
+                    }
+                }).expect("failed to register global shortcut");
+            }
 
             tauri::async_runtime::spawn(async move {
                 let client = reqwest::Client::new();
