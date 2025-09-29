@@ -87,7 +87,9 @@ function displaySearchResults(results) {
                     <td>${row.page_numbers.join(", ")}</td>
                     <td><ul>${row.match_terms.map(t => `<li>${t}</li>`).join('')}</ul></td>
                     <td><ul>${row.snippet.map(s => `<li>${s}</li>`).join('')}</ul></td>
-                    <td class="tagging-cell" data-path="${row.path}">Loading...</td>
+                    <td class="tagging-cell" data-path=${row.path}>
+                        <input type="text" id="tags-input" name="tags-input" value="${row.path}" />
+                    </td>
                 </tr>
             `).join('')}
         </table>
@@ -104,7 +106,8 @@ function displaySearchResults(results) {
             if (!res.ok) throw new Error("Tagging route not available");
 
             document.querySelectorAll(".tagging-cell").forEach(cell => {
-            const path = cell.dataset.path;
+            const input = cell.querySelector("input");
+            const path = input.value; 
 
             fetch("/tagging/tags", {
                 method: "POST",
@@ -116,7 +119,8 @@ function displaySearchResults(results) {
                 return res.json();
             })
             .then(data => {
-                cell.textContent = data.tag || "(no tags)";
+                input.value = data.tag || "";
+                input.placeholder = "(no tags)";
             })
             .catch(err => {
                 console.error(err);
@@ -129,6 +133,45 @@ function displaySearchResults(results) {
             document.querySelectorAll(".tagging-header, .tagging-cell").forEach(el => el.remove());
         });
     document.body.appendChild(container);
+
+    document.querySelectorAll(".tagging-cell input").forEach(input => {
+    input.addEventListener("blur", () => {
+        saveTags(input);
+    });
+
+    let debounceTimer;
+    input.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => saveTags(input), 500);
+    });
+    });
+}
+
+function saveTags(input) {
+  const cell = input.closest(".tagging-cell");
+  const path = cell.dataset.path;
+  const raw = input.value;
+
+  const tags = raw
+    .split(",")
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
+
+  fetch("/tagging/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path: path, tags: tags })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error(`Saving failed for ${path}`);
+    return res.json();
+  })
+  .then(data => {
+    console.log(`Tags saved for ${path}:`, data);
+  })
+  .catch(err => {
+    console.error(err);
+  });
 }
 
 function callSearch(query, full_text) {

@@ -24,14 +24,6 @@
         onclick="goToSettings()"
         >⚙️
     </button>
-    <button
-        type="button"
-        id="tagging-button"
-        title="Go to tagging"
-        onclick="goToTagging()"
-        style="display: none"
-    >Tagging
-    </button>
 
     <div style="display: flex; justify-content: space-around">
         <div>
@@ -90,16 +82,10 @@
         window.location.href = "/settings";
     }
 
-    function goToTagging() {
-        window.location.href="/tagging";
-    }
-
     document.addEventListener("DOMContentLoaded", () => {
         fetch("/tagging/check", { method: "OPTIONS" })
         .then(res => {
             if (!res.ok) throw new Error("Tagging route not available");
-            const button = document.getElementById("tagging-button");
-            button.style.display = "flex";
         })
         .catch(err => {
             console.error("Tagging route missing:", err);
