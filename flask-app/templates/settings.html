@@ -37,6 +37,19 @@
             <textarea id="watchdog_list" name="watchdog_list" cols="50" rows="10" wrap="hard">{{ watchdog_list if watchdog_list }}</textarea><br>
             <label for="watchdog_list">Folders watched for changes</label>
         </div>
+        <div>
+            <p><b>Extensions</b></p>
+            {% for name, _ in extensions %}
+                <div>
+                    <input type="checkbox" id="ext_{{ name }}" name="extensions" value="{{ name }}"
+                        {% if settings and name in settings.get('enabled_extensions', []) %}
+                            checked
+                        {% endif %}
+                    >
+                    <label for="ext_{{ name }}">{{ name }}</label>
+                </div>
+            {% endfor %}
+        </div>
 
         <button type="submit">Save</button>
         </form>

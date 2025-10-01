@@ -4,7 +4,7 @@ import json
 from flask import Blueprint, render_template, request, jsonify, url_for
 from backend.database import get_metadata_from_doc_id_or_path, update_metadata_from_doc_id
 
-bp = Blueprint("tagging", __name__, url_prefix="/tagging", static_folder="static", template_folder="static/templates")
+bp = Blueprint("tagging", __name__, url_prefix="/tagging")
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
