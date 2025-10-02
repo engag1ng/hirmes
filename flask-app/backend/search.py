@@ -14,7 +14,6 @@ from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
 from backend.database import fetch_postings_for_token, fetch_all_documents, delete_documents # pylint: disable=import-error
-from backend.system import template_exists
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -274,7 +273,13 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
 
         else:
             doc_map = defaultdict(
-                lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set(), "tags": set()}
+                lambda: {
+                    "match_count": 0,
+                    "total_tf": 0,
+                    "terms": set(),
+                    "pages": set(),
+                    "tags": set()
+                }
             )
             for doc_path, page, tf in fetch_postings_for_token(conn, token):
                 doc_map[doc_path]["match_count"] += 1
@@ -375,13 +380,24 @@ def _context_windows(text: str, word: str, n: int = 5) -> list:
     return re.findall(pattern, text, flags=re.IGNORECASE)
 
 def make_full_text(query: str) -> str:
+    """
+    Converts query into full text search.
+
+    Adds 'AND' between every word to effectively create a full text search.
+
+    Args:
+        query: string with the query
+
+    Returns:
+        String
+    """
     split_query = query.split()
     new_query = []
-    
+
     for i, word in enumerate(split_query):
         new_query.append(word)
         if i+1 != len(split_query):
             new_query.append('AND')
-    
+
     full_text_query = " ".join(new_query)
     return full_text_query

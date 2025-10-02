@@ -1,7 +1,12 @@
+"""
+Tagging extension for Hirmes.
+
+Allows users to add tags to documents.
+"""
+
 import os
 import sqlite3
-import json
-from flask import Blueprint, render_template, request, jsonify, url_for
+from flask import Blueprint, request, jsonify
 from backend.database import get_metadata_from_doc_id_or_path, update_metadata_from_doc_id
 
 bp = Blueprint("tagging", __name__, url_prefix="/tagging")
@@ -11,12 +16,11 @@ os.makedirs(APP_FOLDER, exist_ok=True)
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
-@bp.route("/")
-def index():
-    return
-
 @bp.route("/tags", methods=["POST"])
 def get_tags():
+    """
+    Returns all tags for a path.
+    """
     data = request.json
     path = data["path"]
     conn = sqlite3.connect(DB_PATH)
@@ -26,11 +30,16 @@ def get_tags():
 
 @bp.route("/check", methods=["OPTIONS"])
 def check():
-    if request.method == "OPTIONS":
-        return "", 200
+    """
+    Route to check if extension exists.
+    """
+    return "", 200
 
 @bp.route("/save", methods=["POST"])
 def save_tags():
+    """
+    Save tags for a document to database.
+    """
     data = request.json
     path = data["path"]
     tags = data["tags"]

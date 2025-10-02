@@ -2,7 +2,6 @@
 Main Flask application file including routes and functions.
 """
 
-import json
 import os
 import threading
 import importlib
@@ -29,15 +28,16 @@ def index_html():
     """
 
     settings = load_settings()
-    
-    num_files_reindexed, num_files_deleted, num_files_indexed = (
-        run_watchdog(settings["watchdog_number"])
-    )
+
+    run_watchdog(settings["watchdog_number"])
 
     return render_template('index.html', settings=settings)
 
 @app.route('/open-file', methods=['POST'])
 def open_file():
+    """
+    Uses OS to open a file on the users computer.
+    """
     data = request.get_json(force=True)
     filename = data.get('path')
     if not filename:

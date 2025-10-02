@@ -6,11 +6,10 @@ Typical usage:
 """
 
 import sqlite3
-import json
 import os
-from backend.indexer import repeat_indexing, index_path
-from backend.settings import load_settings
-from backend.database import initialise_db
+from backend.indexer import repeat_indexing, index_path # pylint: disable=import-error
+from backend.settings import load_settings # pylint: disable=import-error
+from backend.database import initialise_db # pylint: disable=import-error
 
 APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
@@ -56,7 +55,7 @@ def _find_files_to_reindex(conn, n: int) -> list[str]:
         WHERE 
             metadata IS NULL
             OR json_extract(metadata, '$.last_indexed') IS NULL
-            OR datetime(json_extract(metadata, '$.last_indexed')) <= datetime('now', '-14 days')
+            OR datetime(json_extract(metadata, '$.last_indexed')) <= datetime('now', '-2 days')
         ORDER BY datetime(json_extract(metadata, '$.last_indexed')) ASC
         LIMIT ?;
     """, (n,))
@@ -76,7 +75,7 @@ def _check_watchdog_list() -> int:
     settings = load_settings()
     is_recursive = settings["recursive"]
     try:
-        open(WATCHDOG_PATH, 'x')
+        open(WATCHDOG_PATH, 'x', encoding="UTF-8") # pylint: disable=consider-using-with
     except FileExistsError:
         with open(WATCHDOG_PATH, 'r', encoding="UTF-8") as file:
             content = [path.strip("\n") for path in file.readlines() if path != "\n"]

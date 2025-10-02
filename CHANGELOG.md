@@ -1,3 +1,19 @@
+# 0.3.0 (2025-10-02)
+## Added
+* Settings menu
+* Option to change watchdog listener list
+* Option to change watchdog reindexing number
+* Option to select enabled extensions
+* Document hyperlink in search results
+* Tagging extension
+* Program added to auto-start
+* Quick open shortcut (CTRL+Shift+Space)
+## Changed
+* Watchdog removes missing documents on search
+## Removed
+* File rename when indexing
+
+
 # 0.2.0 (2025-09-05)
 ## Added
 * Watchdog that automatically finds, removes and reindexes files

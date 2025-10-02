@@ -153,7 +153,7 @@ def repeat_indexing(conn, to_index: list) -> tuple[int]:
     Returns:
         (int, int): Number of files reindexed, files deleted from database
     """
-    files_reindexed = 0 
+    files_reindexed = 0
     to_delete = []
     initialise_db(conn)
     enable_bulk_mode(conn)
@@ -173,7 +173,11 @@ def repeat_indexing(conn, to_index: list) -> tuple[int]:
                 continue
             pages = [tokenize(page) for page in content]
             doc_id = get_or_create_doc_id(conn, file_path)
-            update_metadata_from_doc_id(conn, doc_id, {"last_indexed": str(datetime.datetime.today())})
+            update_metadata_from_doc_id(
+                conn,
+                doc_id,
+                {"last_indexed": str(datetime.datetime.today())}
+            )
 
             for page_idx, tokens in enumerate(pages, start=1):
                 counts = Counter(tokens)                     # token -> tf (on that page)
@@ -189,5 +193,5 @@ def repeat_indexing(conn, to_index: list) -> tuple[int]:
     delete_documents(conn, to_delete)
     conn.commit()
     disable_bulk_mode(conn)
-    
+
     return files_reindexed, len(to_delete)

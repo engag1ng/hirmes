@@ -96,8 +96,7 @@ def get_metadata_from_doc_id_or_path(conn, doc_id: int = None, path: str = None)
     if row:
         data = json.loads(row[0])
         return data
-    else:
-        return None
+    return None
 
 def update_metadata_from_doc_id(conn, doc_id: int, updates: dict):
     """
