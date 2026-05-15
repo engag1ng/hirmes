@@ -22,6 +22,9 @@ DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
 server = None # pylint: disable=invalid-name
 
+_progress_lock = threading.Lock()
+_progress = {"current": 0, "total": 0}
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -96,6 +99,18 @@ def api_save_settings():
 
     return redirect(url_for("settings_html"))
 
+@app.route('/progress', methods=['GET'])
+def api_progress():
+    """Returns current indexing progress.
+
+    Returns:
+        json: JSON object:
+            "current": Files processed so far.
+            "total": Total files to index (0 while scanning).
+    """
+    with _progress_lock:
+        return jsonify(dict(_progress))
+
 @app.route('/indexing', methods=['POST'])
 def api_indexing():
     """Route for indexing files.
@@ -109,7 +124,16 @@ def api_indexing():
     path = data.get('path')
     recursive = data.get('recursive', False)
 
-    number_indexed = index_path(path, recursive)
+    with _progress_lock:
+        _progress["current"] = 0
+        _progress["total"] = 0
+
+    def on_progress(current, total):
+        with _progress_lock:
+            _progress["current"] = current
+            _progress["total"] = total
+
+    number_indexed = index_path(path, recursive, on_progress)
 
     save_settings({
         "recursive": recursive,

@@ -168,6 +168,4 @@ This project is licensed under a custom license! Please read the LICENSE file.
 If you have any recommendations, issues or improvements, please open an issue or pull request. Thank you!
 
 ## To-Do
-- [ ] Make progress bar more realistic
-- [ ] Improve indexing speed
-- [ ] Fix not working search
+- Improve indexing speed

@@ -10,15 +10,23 @@ document.getElementById("indexForm").addEventListener("submit", async function(e
 
     overlay.style.display = "flex";
     progressBar.value = 0;
-    progressText.textContent = "Indexing in progress...";
+    progressText.textContent = "Scanning files...";
 
-    // Fake progress until request finishes
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress = Math.min(progress + Math.random() * 10, 95);
-        progressBar.value = progress;
-        progressText.textContent = `Indexing... ${Math.floor(progress)}%`;
-    }, 500);
+    let polling = true;
+    (async function pollProgress() {
+        while (polling) {
+            try {
+                const res = await fetch("/progress");
+                const data = await res.json();
+                if (data.total > 0) {
+                    const pct = Math.round((data.current / data.total) * 100);
+                    progressBar.value = pct;
+                    progressText.textContent = `Indexing... ${data.current}/${data.total} (${pct}%)`;
+                }
+            } catch (_) {}
+            await new Promise(r => setTimeout(r, 300));
+        }
+    })();
 
     fetch("/indexing", {
         method: "POST",
@@ -30,13 +38,13 @@ document.getElementById("indexForm").addEventListener("submit", async function(e
     })
     .then(res => res.json())
     .then(data => {
-        clearInterval(interval);
+        polling = false;
         progressBar.value = 100;
         progressText.textContent = "Completed!";
         showPopup(`Indexed ${data.indexed_count} file(s).`);
     })
     .catch(() => {
-        clearInterval(interval);
+        polling = false;
         progressBar.value = 0;
         progressText.textContent = "Failed!";
         showPopup("Indexing failed!")

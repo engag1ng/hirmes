@@ -30,7 +30,7 @@ from backend.settings import APP_FOLDER # pylint: disable=import-error
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
-def index_path(path: str, is_recursive: bool) -> int:
+def index_path(path: str, is_recursive: bool, progress_callback=None) -> int:
     """Indexes all files in a folder. Can be recursive.
 
     While indexing files get both renamed with a unique timestamp based ID
@@ -38,8 +38,9 @@ def index_path(path: str, is_recursive: bool) -> int:
 
     Args:
         path: String denoting the relative or full path of a folder that should
-                be indexed. 
+                be indexed.
         is_recursive: Boolean indicating if indexing is done recursively.
+        progress_callback: Optional callable(current, total) called after each file.
 
     Returns:
         number_files_found: Integer of how many files got indexed.
@@ -48,7 +49,7 @@ def index_path(path: str, is_recursive: bool) -> int:
     result = _get_files_without_id(path, is_recursive)
     number_files_found = result["number_files_found"]
     files_without_id = result["file_paths"]
-    _index_files(files_without_id)
+    _index_files(files_without_id, progress_callback)
 
     return number_files_found
 
@@ -60,12 +61,17 @@ def _get_timestamp():
 
     return datetime.datetime.now().strftime("%y%m%d%H%M%S.%f")
 
-def _index_files(to_index: list):
+def _index_files(to_index: list, progress_callback=None):
     """Indexes all files in to_index.
 
     Args:
         to_index: List of tuples (full_path, is_index)
+        progress_callback: Optional callable(current, total) called after each file.
     """
+
+    total = len(to_index)
+    if progress_callback:
+        progress_callback(0, total)
 
     conn = sqlite3.connect(DB_PATH)
     try:
@@ -73,12 +79,16 @@ def _index_files(to_index: list):
         enable_bulk_mode(conn)
         with conn:
             token_cache = {}
-            for file_path in to_index:
+            for i, file_path in enumerate(to_index, start=1):
                 extractor = match_extractor(file_path)
                 if not extractor:
+                    if progress_callback:
+                        progress_callback(i, total)
                     continue
                 content = extractor(file_path)
                 if not content:
+                    if progress_callback:
+                        progress_callback(i, total)
                     continue
                 pages = [tokenize(page) for page in content]
                 metadata = {"last_indexed": str(datetime.datetime.today())}
@@ -93,6 +103,8 @@ def _index_files(to_index: list):
                         doc_id, page_idx,
                         _token_cache=token_cache
                     )
+                if progress_callback:
+                    progress_callback(i, total)
     finally:
         conn.commit()
         disable_bulk_mode(conn)
