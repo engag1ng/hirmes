@@ -9,11 +9,10 @@ import re
 import os
 import sqlite3
 from importlib.resources import files
-from collections import defaultdict
 from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
-from backend.database import fetch_postings_for_token, fetch_all_documents, delete_documents # pylint: disable=import-error
+from backend.database import fetch_postings_by_doc_id, fetch_paths_for_doc_ids, fetch_all_doc_ids, delete_documents # pylint: disable=import-error
 from backend.settings import APP_FOLDER # pylint: disable=import-error
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
@@ -145,88 +144,114 @@ def _to_rpn(tokens: list) -> list:
 
     return output_queue
 
-def _evaluate_or(left: dict, right: dict, result: dict) -> dict:
-    """Evaluate OR (|) gate and edit result accordingly.
+def _evaluate_or(left: list, right: list) -> list:
+    """Evaluate OR via sorted merge union on doc_id.
 
     Args:
-        left: Dictionary of left token.
-        right: Dictionary of right token.
-        result: Dictionary to be edited.
+        left: Sorted posting list.
+        right: Sorted posting list.
 
     Returns:
-        result: Edited result dictionary.
+        result: Sorted posting list containing union.
     """
-    all_keys = left.keys() | right.keys()
-    for key in all_keys:
-        result[key]["match_count"] = (
-            left[key]["match_count"]
-            + right[key]["match_count"]
-        )
-        result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
-        result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
-        result[key]["pages"] = left[key]["pages"] | right[key]["pages"]
-
+    result = []
+    i, j = 0, 0
+    ll, rl = len(left), len(right)
+    while i < ll and j < rl:
+        l, r = left[i], right[j]
+        lid, rid = l["doc_id"], r["doc_id"]
+        if lid < rid:
+            result.append(l)
+            i += 1
+        elif lid > rid:
+            result.append(r)
+            j += 1
+        else:
+            result.append({
+                "doc_id": lid,
+                "match_count": l["match_count"] + r["match_count"],
+                "total_tf": l["total_tf"] + r["total_tf"],
+                "terms": l["terms"] | r["terms"],
+                "pages": l["pages"] | r["pages"],
+            })
+            i += 1
+            j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
     return result
 
-def _evaluate_and(left: dict, right: dict, result: dict) -> dict:
-    """Evaluates AND (&) gate and edit result accordingly.
+def _evaluate_and(left: list, right: list) -> list:
+    """Evaluate AND via sorted merge intersection on doc_id.
 
     Args:
-        left: Dictionary of left token.
-        right: Dictionary of right token.
-        result: Dictionary to be edited.
+        left: Sorted posting list.
+        right: Sorted posting list.
 
     Returns:
-        result: Edited result dictionary.
+        result: Sorted posting list containing intersection.
     """
-    common_keys = left.keys() & right.keys()
-    for key in common_keys:
-        result[key]["match_count"] = (
-            left[key]["match_count"]
-            + right[key]["match_count"]
-        )
-        result[key]["total_tf"] = left[key]["total_tf"] + right[key]["total_tf"]
-        result[key]["terms"] = left[key]["terms"] | right[key]["terms"]
-        result[key]["pages"] = left[key]["pages"] | right[key]["pages"]
-
+    result = []
+    i, j = 0, 0
+    ll, rl = len(left), len(right)
+    while i < ll and j < rl:
+        l, r = left[i], right[j]
+        lid, rid = l["doc_id"], r["doc_id"]
+        if lid < rid:
+            i += 1
+        elif lid > rid:
+            j += 1
+        else:
+            result.append({
+                "doc_id": lid,
+                "match_count": l["match_count"] + r["match_count"],
+                "total_tf": l["total_tf"] + r["total_tf"],
+                "terms": l["terms"] | r["terms"],
+                "pages": l["pages"] | r["pages"],
+            })
+            i += 1
+            j += 1
     return result
 
-def _evaluate_not(conn, operand: dict) -> dict:
-    """Evaluate NOT (-) gate and edit result accordingly.
+def _evaluate_not(conn, operand: list) -> list:
+    """Evaluate NOT via sorted merge difference on doc_id.
 
     Args:
         conn: SQLite3 connection object.
-        operand: Dictionary of token that should be excluded.
+        operand: Sorted posting list of docs to exclude.
 
     Returns:
-        result: Edited result dictionary.
+        result: Sorted posting list of all docs not in operand.
     """
-
-    all_docs = fetch_all_documents(conn)
-
-    excluded_paths = set(operand.keys())
-
-    included_docs = all_docs.difference(excluded_paths)
-
-    result = {
-        doc_path: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set(), "path": ""}
-        for doc_path in included_docs
-    }
-
+    all_doc_ids = fetch_all_doc_ids(conn)
+    result = []
+    i, j = 0, 0
+    while i < len(all_doc_ids) and j < len(operand):
+        did = all_doc_ids[i]
+        if did < operand[j]["doc_id"]:
+            result.append({"doc_id": did, "match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
+            i += 1
+        elif did > operand[j]["doc_id"]:
+            j += 1
+        else:
+            i += 1
+            j += 1
+    while i < len(all_doc_ids):
+        result.append({"doc_id": all_doc_ids[i], "match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
+        i += 1
     return result
 
 def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
     """Evaluates RPN boolean expression and returns ranked results.
 
-
     Ranking is based on number of terms matched, then total term frequency.
-    Evaluates at the document level (doc_id as key), but stores pages inside each doc.
+    Evaluates at the document level (doc_id), looks up paths in a single
+    batch query at the end.
 
     Args:
         rpn_tokens: List of tokens in RPN format.
 
     Returns:
-        results: List[{path: str, page_numbers: list, matched_terms: list}] 
+        results: List[{path: str, page_numbers: list, matched_terms: list}]
     """
 
     conn = sqlite3.connect(DB_PATH)
@@ -242,9 +267,7 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
                     conn.close()
                     return None
 
-                result = _evaluate_not(conn, operand)
-
-                stack.append(result)
+                stack.append(_evaluate_not(conn, operand))
 
             else:
                 try:
@@ -254,67 +277,55 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
                     conn.close()
                     return None
 
-                result = defaultdict(
-                    lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
-                )
-
                 if token == "and":
-                    result = _evaluate_and(left, right, result)
-
+                    stack.append(_evaluate_and(left, right))
                 elif token == "or":
-                    result = _evaluate_or(left, right, result)
-
-                stack.append(result)
+                    stack.append(_evaluate_or(left, right))
 
         else:
-            doc_map = defaultdict(
-                lambda: {
-                    "match_count": 0,
-                    "total_tf": 0,
-                    "terms": set(),
-                    "pages": set(),
-                    "tags": set()
-                }
-            )
-            for doc_path, page, tf in fetch_postings_for_token(conn, token):
-                doc_map[doc_path]["match_count"] += 1
-                doc_map[doc_path]["total_tf"] += tf
-                doc_map[doc_path]["terms"].add(token)
-                doc_map[doc_path]["pages"].add(page)
-
-            stack.append(doc_map)
+            raw_rows = fetch_postings_by_doc_id(conn, token)
+            posting_list = []
+            current_doc_id = None
+            current_entry = None
+            for doc_id, page, tf in raw_rows:
+                if doc_id != current_doc_id:
+                    if current_entry is not None:
+                        posting_list.append(current_entry)
+                    current_doc_id = doc_id
+                    current_entry = {
+                        "doc_id": doc_id,
+                        "match_count": 1,
+                        "total_tf": tf,
+                        "terms": {token},
+                        "pages": {page},
+                    }
+                else:
+                    current_entry["match_count"] += 1
+                    current_entry["total_tf"] += tf
+                    current_entry["pages"].add(page)
+            if current_entry is not None:
+                posting_list.append(current_entry)
+            stack.append(posting_list)
 
     if len(stack) != 1:
         conn.close()
         return None
 
-    final_map = stack.pop()
-
-    results = [
-        (
-            str(doc_path),
-            sorted(list(data["pages"])),
-            data["match_count"],
-            data["total_tf"],
-            list(data["terms"])
-        )
-        for doc_path, data in final_map.items()
-    ]
-
-    results.sort(key=lambda x: (-x[2], -x[3]))
-
-    truncated_results = [
-        {
-            "path": doc_path,
-            "page_numbers": pages,
-            "match_terms": terms
-        }
-        for doc_path, pages, _mc, _tf, terms in results
-    ]
-
+    final_list = stack.pop()
+    id_to_path = fetch_paths_for_doc_ids(conn, [e["doc_id"] for e in final_list])
     conn.close()
 
-    return truncated_results
+    final_list.sort(key=lambda e: (-e["match_count"], -e["total_tf"]))
+
+    return [
+        {
+            "path": id_to_path[e["doc_id"]],
+            "page_numbers": sorted(e["pages"]),
+            "match_terms": list(e["terms"]),
+        }
+        for e in final_list
+        if e["doc_id"] in id_to_path
+    ]
 
 def _search_snippet(result: dict) -> list:
     """Finds snippets in document for all matched terms.
@@ -386,13 +397,4 @@ def make_full_text(query: str) -> str:
     Returns:
         String
     """
-    split_query = query.split()
-    new_query = []
-
-    for i, word in enumerate(split_query):
-        new_query.append(word)
-        if i+1 != len(split_query):
-            new_query.append('AND')
-
-    full_text_query = " ".join(new_query)
-    return full_text_query
+    return " AND ".join(query.split())

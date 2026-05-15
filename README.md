@@ -168,4 +168,5 @@ This project is licensed under a custom license! Please read the LICENSE file.
 If you have any recommendations, issues or improvements, please open an issue or pull request. Thank you!
 
 ## To-Do
-- Improve indexing speed
+- Improve AND/OR evaluation
+- Fix long tokenization bottleneck

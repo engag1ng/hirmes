@@ -12,7 +12,6 @@ slowdown on any benchmark is worth investigating before merging.
 
 import sqlite3
 import pytest
-from collections import defaultdict
 
 from backend.tokenizer import tokenize, tokenize_query
 from backend.search import _to_rpn, make_full_text, _evaluate_and, _evaluate_or
@@ -45,14 +44,12 @@ _COMPLEX_TOKENS = [
 ]
 
 
-def _large_doc_map(n, prefix="doc"):
-    m = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
-    for i in range(n):
-        m[f"/{prefix}_{i}.txt"] = {
-            "match_count": 1, "total_tf": i + 1,
-            "terms": {"term"}, "pages": {1}
-        }
-    return m
+def _large_posting_list(n, offset=0):
+    return [
+        {"doc_id": i + offset, "match_count": 1, "total_tf": i + 1,
+         "terms": {"term"}, "pages": {1}}
+        for i in range(n)
+    ]
 
 
 # ── Tokenizer ─────────────────────────────────────────────────────────────────
@@ -106,45 +103,24 @@ def test_bench_to_rpn_complex(benchmark):
 # ── Boolean gates ─────────────────────────────────────────────────────────────
 
 def test_bench_evaluate_and_full_overlap(benchmark):
-    """AND on two 1 000-doc maps with 100 % overlap — best case."""
-    left  = _large_doc_map(1000, "a")
-    right = _large_doc_map(1000, "a")  # identical keys
-
-    def run():
-        result = defaultdict(
-            lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
-        )
-        _evaluate_and(left, right, result)
-
-    benchmark(run)
+    """AND on two 1 000-doc lists with 100 % overlap — all entries match."""
+    left  = _large_posting_list(1000)
+    right = _large_posting_list(1000)
+    benchmark(_evaluate_and, left, right)
 
 
 def test_bench_evaluate_and_no_overlap(benchmark):
-    """AND on two 1 000-doc maps with 0 % overlap — produces empty result."""
-    left  = _large_doc_map(1000, "a")
-    right = _large_doc_map(1000, "b")
-
-    def run():
-        result = defaultdict(
-            lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
-        )
-        _evaluate_and(left, right, result)
-
-    benchmark(run)
+    """AND on two 1 000-doc lists with 0 % overlap — produces empty result."""
+    left  = _large_posting_list(1000, offset=0)
+    right = _large_posting_list(1000, offset=1000)
+    benchmark(_evaluate_and, left, right)
 
 
 def test_bench_evaluate_or_no_overlap(benchmark):
-    """OR on two 1 000-doc maps with 0 % overlap — 2 000-doc union."""
-    left  = _large_doc_map(1000, "a")
-    right = _large_doc_map(1000, "b")
-
-    def run():
-        result = defaultdict(
-            lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()}
-        )
-        _evaluate_or(left, right, result)
-
-    benchmark(run)
+    """OR on two 1 000-doc lists with 0 % overlap — 2 000-doc union."""
+    left  = _large_posting_list(1000, offset=0)
+    right = _large_posting_list(1000, offset=1000)
+    benchmark(_evaluate_or, left, right)
 
 
 # ── Database ──────────────────────────────────────────────────────────────────

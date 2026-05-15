@@ -9,7 +9,6 @@ Run: pytest tests/test_search_logic.py -v
 
 import sqlite3
 import pytest
-from collections import defaultdict
 
 from backend.search import (
     _to_rpn,
@@ -22,16 +21,24 @@ from backend.search import (
 from backend.database import initialise_db, get_or_create_doc_id
 
 
-def _doc_map(*entries):
-    """Build a defaultdict doc_map from (path, match_count, total_tf, terms, pages) tuples."""
-    m = defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
-    for path, mc, tf, terms, pages in entries:
-        m[path] = {"match_count": mc, "total_tf": tf, "terms": set(terms), "pages": set(pages)}
-    return m
+def _posting_list(*entries):
+    """Build sorted posting list from (doc_id, mc, tf, terms, pages) tuples."""
+    return sorted(
+        [{"doc_id": did, "match_count": mc, "total_tf": tf,
+          "terms": set(terms), "pages": set(pages)}
+         for did, mc, tf, terms, pages in entries],
+        key=lambda x: x["doc_id"]
+    )
 
 
-def _empty_result():
-    return defaultdict(lambda: {"match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
+def _doc_ids(lst):
+    """Return the set of doc_ids present in a posting list."""
+    return {e["doc_id"] for e in lst}
+
+
+def _find(lst, doc_id):
+    """Return the entry for a specific doc_id, or None."""
+    return next((e for e in lst if e["doc_id"] == doc_id), None)
 
 
 # ── _to_rpn ───────────────────────────────────────────────────────────────────
@@ -104,38 +111,40 @@ class TestToRPN:
 class TestEvaluateAnd:
 
     def test_keeps_only_common_docs(self):
-        left  = _doc_map(("/a.txt", 1, 3, {"cat"}, {1}),
-                         ("/b.txt", 1, 2, {"cat"}, {2}))
-        right = _doc_map(("/b.txt", 1, 5, {"dog"}, {3}),
-                         ("/c.txt", 1, 1, {"dog"}, {1}))
-        result = _evaluate_and(left, right, _empty_result())
-        assert "/a.txt" not in result
-        assert "/c.txt" not in result
-        assert "/b.txt" in result
+        left  = _posting_list((1, 1, 3, {"cat"}, {1}),
+                              (2, 1, 2, {"cat"}, {2}))
+        right = _posting_list((2, 1, 5, {"dog"}, {3}),
+                              (3, 1, 1, {"dog"}, {1}))
+        result = _evaluate_and(left, right)
+        ids = _doc_ids(result)
+        assert 1 not in ids
+        assert 3 not in ids
+        assert 2 in ids
 
     def test_sums_match_count_and_tf(self):
-        left  = _doc_map(("/x.txt", 2, 4, {"a"}, {1}))
-        right = _doc_map(("/x.txt", 3, 6, {"b"}, {2}))
-        result = _evaluate_and(left, right, _empty_result())
-        assert result["/x.txt"]["match_count"] == 5
-        assert result["/x.txt"]["total_tf"] == 10
+        left  = _posting_list((1, 2, 4, {"a"}, {1}))
+        right = _posting_list((1, 3, 6, {"b"}, {2}))
+        result = _evaluate_and(left, right)
+        e = _find(result, 1)
+        assert e["match_count"] == 5
+        assert e["total_tf"] == 10
 
     def test_unions_pages(self):
-        left  = _doc_map(("/x.txt", 1, 1, {"a"}, {1, 2}))
-        right = _doc_map(("/x.txt", 1, 1, {"b"}, {3}))
-        result = _evaluate_and(left, right, _empty_result())
-        assert result["/x.txt"]["pages"] == {1, 2, 3}
+        left  = _posting_list((1, 1, 1, {"a"}, {1, 2}))
+        right = _posting_list((1, 1, 1, {"b"}, {3}))
+        result = _evaluate_and(left, right)
+        assert _find(result, 1)["pages"] == {1, 2, 3}
 
     def test_unions_terms(self):
-        left  = _doc_map(("/x.txt", 1, 1, {"cat"}, {1}))
-        right = _doc_map(("/x.txt", 1, 1, {"dog"}, {1}))
-        result = _evaluate_and(left, right, _empty_result())
-        assert result["/x.txt"]["terms"] == {"cat", "dog"}
+        left  = _posting_list((1, 1, 1, {"cat"}, {1}))
+        right = _posting_list((1, 1, 1, {"dog"}, {1}))
+        result = _evaluate_and(left, right)
+        assert _find(result, 1)["terms"] == {"cat", "dog"}
 
     def test_empty_intersection_returns_empty(self):
-        left  = _doc_map(("/a.txt", 1, 1, {"x"}, {1}))
-        right = _doc_map(("/b.txt", 1, 1, {"y"}, {1}))
-        result = _evaluate_and(left, right, _empty_result())
+        left  = _posting_list((1, 1, 1, {"x"}, {1}))
+        right = _posting_list((2, 1, 1, {"y"}, {1}))
+        result = _evaluate_and(left, right)
         assert len(result) == 0
 
 
@@ -144,32 +153,34 @@ class TestEvaluateAnd:
 class TestEvaluateOr:
 
     def test_includes_all_docs(self):
-        left  = _doc_map(("/a.txt", 1, 1, {"x"}, {1}))
-        right = _doc_map(("/b.txt", 1, 1, {"y"}, {1}))
-        result = _evaluate_or(left, right, _empty_result())
-        assert "/a.txt" in result
-        assert "/b.txt" in result
+        left  = _posting_list((1, 1, 1, {"x"}, {1}))
+        right = _posting_list((2, 1, 1, {"y"}, {1}))
+        result = _evaluate_or(left, right)
+        assert _doc_ids(result) == {1, 2}
 
     def test_sums_counts_for_shared_doc(self):
-        left  = _doc_map(("/x.txt", 1, 2, {"a"}, {1}))
-        right = _doc_map(("/x.txt", 2, 3, {"b"}, {2}))
-        result = _evaluate_or(left, right, _empty_result())
-        assert result["/x.txt"]["match_count"] == 3
-        assert result["/x.txt"]["total_tf"] == 5
+        left  = _posting_list((1, 1, 2, {"a"}, {1}))
+        right = _posting_list((1, 2, 3, {"b"}, {2}))
+        result = _evaluate_or(left, right)
+        e = _find(result, 1)
+        assert e["match_count"] == 3
+        assert e["total_tf"] == 5
 
     def test_doc_only_in_left_preserved(self):
-        left  = _doc_map(("/a.txt", 2, 4, {"x"}, {1}))
-        right = _doc_map(("/b.txt", 1, 1, {"y"}, {1}))
-        result = _evaluate_or(left, right, _empty_result())
-        assert result["/a.txt"]["match_count"] == 2
-        assert result["/a.txt"]["total_tf"] == 4
+        left  = _posting_list((1, 2, 4, {"x"}, {1}))
+        right = _posting_list((2, 1, 1, {"y"}, {1}))
+        result = _evaluate_or(left, right)
+        e = _find(result, 1)
+        assert e["match_count"] == 2
+        assert e["total_tf"] == 4
 
     def test_doc_only_in_right_preserved(self):
-        left  = _doc_map(("/a.txt", 1, 1, {"x"}, {1}))
-        right = _doc_map(("/b.txt", 3, 9, {"y"}, {2}))
-        result = _evaluate_or(left, right, _empty_result())
-        assert result["/b.txt"]["match_count"] == 3
-        assert result["/b.txt"]["total_tf"] == 9
+        left  = _posting_list((1, 1, 1, {"x"}, {1}))
+        right = _posting_list((2, 3, 9, {"y"}, {2}))
+        result = _evaluate_or(left, right)
+        e = _find(result, 2)
+        assert e["match_count"] == 3
+        assert e["total_tf"] == 9
 
 
 # ── _evaluate_not ─────────────────────────────────────────────────────────────
@@ -186,16 +197,17 @@ class TestEvaluateNot:
         return conn
 
     def test_excludes_operand_docs(self, db_with_docs):
-        operand = _doc_map(("/a.txt", 1, 1, {"x"}, {1}))
+        # /a.txt gets doc_id=1 (first insert into autoincrement table)
+        operand = _posting_list((1, 1, 1, {"x"}, {1}))
         result = _evaluate_not(db_with_docs, operand)
-        assert "/a.txt" not in result
-        assert "/b.txt" in result
-        assert "/c.txt" in result
+        ids = _doc_ids(result)
+        assert 1 not in ids
+        assert 2 in ids
+        assert 3 in ids
 
     def test_empty_operand_returns_all(self, db_with_docs):
-        result = _evaluate_not(db_with_docs, _empty_result())
-        paths = set(result.keys())
-        assert {"/a.txt", "/b.txt", "/c.txt"}.issubset(paths)
+        result = _evaluate_not(db_with_docs, [])
+        assert {1, 2, 3}.issubset(_doc_ids(result))
 
 
 # ── _context_windows ──────────────────────────────────────────────────────────

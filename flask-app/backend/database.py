@@ -283,13 +283,43 @@ def fetch_all_documents(conn) -> set:
         conn: SQLite3 connection object.
 
     Returns:
-        set of paths 
+        set of paths
     """
     cursor = conn.cursor()
     cursor.execute("SELECT path FROM Document")
     result = {row[0] for row in cursor.fetchall()}
 
     return result
+
+def fetch_postings_by_doc_id(conn, token_text: str) -> list:
+    """Returns (doc_id, page, tf) rows ordered by doc_id for a given token."""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT p.doc_id, p.page, p.tf
+        FROM Posting p
+        JOIN Token t ON t.token_id = p.token_id
+        WHERE t.token_text = ?
+        ORDER BY p.doc_id
+    """, (token_text,))
+    return cur.fetchall()
+
+def fetch_paths_for_doc_ids(conn, doc_ids: list) -> dict:
+    """Returns {doc_id: path} for the given doc_ids."""
+    if not doc_ids:
+        return {}
+    placeholders = ",".join("?" * len(doc_ids))
+    cur = conn.cursor()
+    cur.execute(
+        f"SELECT doc_id, path FROM Document WHERE doc_id IN ({placeholders})",
+        doc_ids
+    )
+    return {row[0]: row[1] for row in cur.fetchall()}
+
+def fetch_all_doc_ids(conn) -> list:
+    """Returns all doc_ids sorted ascending."""
+    cur = conn.cursor()
+    cur.execute("SELECT doc_id FROM Document ORDER BY doc_id")
+    return [row[0] for row in cur.fetchall()]
 
 def delete_postings_for_doc_id(conn, doc_id: int):
     """Deletes all postings for doc_id.

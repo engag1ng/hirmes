@@ -13,8 +13,13 @@ LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
 STOPLIST_PATH = get_resource_path("backend/stoplist.txt")
 URL_PATTERN = re.compile(r'\b(?:https?://)?(?:www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}(?:/[^\s]*)?')
 DATE_PATTERN = re.compile(r'\b(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(\d{4})\b')
-FILTER_RE = re.compile(r'[“\-_\.,0-9]{2,}')
-SPLIT_RE = re.compile(r"[’']+")
+FILTER_RE = re.compile(r'["\-_\.,0-9]{2,}')
+SPLIT_RE = re.compile(r"['']+")
+_SPECIAL_CHAR_RE = re.compile(r'[%^&*~\[\]]')
+_PUNCT_RE = re.compile(r'[()/:]')
+_FILTER_CHARS = set(
+    '"-. _,.' + ''.join(map(str, range(10))) + ''.join(f'{i:02}' for i in range(10))
+)
 
 def tokenize(content: str) -> list:
     """
@@ -28,7 +33,7 @@ def tokenize(content: str) -> list:
     Returns:
         list: All tokens.
     """
-    content = re.sub(r'[%^&*~\[\]]', '', content)
+    content = _SPECIAL_CHAR_RE.sub('', content)
 
     urls = URL_PATTERN.findall(content)
     content = URL_PATTERN.sub('', content)
@@ -41,7 +46,7 @@ def tokenize(content: str) -> list:
             clean_urls.append(url)
     clean_urls = list(set(clean_urls))
 
-    content = re.sub(r'[()/:]', '', content)
+    content = _PUNCT_RE.sub('', content)
 
     dates = ['.'.join(date) for date in DATE_PATTERN.findall(content)]
     content = DATE_PATTERN.sub('', content)
@@ -49,14 +54,10 @@ def tokenize(content: str) -> list:
     lines = [line.lstrip('#').strip() for line in content.splitlines() if line.strip()]
     tokens = []
 
-    filter_set = set(
-        '“-. _,.' + ''.join(map(str, range(10))) + ''.join(f'{i:02}' for i in range(10))
-    )
-
     for line in lines:
         for word in line.split():
-            word = word.strip('",.“”>`!?;=_')
-            if len(word) == 1 and word in filter_set:
+            word = word.strip('",."">`!?;=_')
+            if len(word) == 1 and word in _FILTER_CHARS:
                 continue
             word = FILTER_RE.sub('', word)
             if word:
@@ -72,7 +73,7 @@ def tokenize_query(query: str) -> list:
 
     Args:
         query: String query to be tokenized.
-    
+
     Returns:
         processed_query: Query in tokenized list form.
     """
@@ -84,10 +85,9 @@ def tokenize_query(query: str) -> list:
         if _is_operator(token):
             processed_query.append(token)
         else:
-            tokenized = tokenize(token.lower())
-            if tokenized:
-                term_tokens = tokenized[0]
-                processed_query.append(term_tokens)
+            term = FILTER_RE.sub('', token.lower())
+            if term and term not in STOPLIST:
+                processed_query.append(term)
 
     return processed_query
 
