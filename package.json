@@ -4,7 +4,8 @@
   "version": "0.3.0",
   "type": "module",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:flask": "node -e \"require('child_process').execSync(process.platform==='win32'?'build-flask.bat':'sh ./build-flask.sh',{stdio:'inherit'})\""
   },
   "devDependencies": {
     "@tauri-apps/api": "^1.4.0",

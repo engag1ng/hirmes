@@ -23,6 +23,9 @@ This is a simple step-by-step guide on how to use this program.
   - Visit https://www.python.org/downloads/ and download the latest version of Python3
 > [!WARNING]
 > Make sure to check `Add to PATH` when installing!
+
+- Rust (required by Tauri)
+  - Visit https://rustup.rs/ and follow the instructions for your platform
   
 ### Installation
 1. Clone the project files:
@@ -41,8 +44,21 @@ pip install -r requirements.txt
 ``` 
 
 ### Build
-In `/`
+In `/`, first bundle the Flask backend:
+
+**Windows:**
 ```cmd
+build-flask.bat
+```
+
+**Linux/macOS:**
+```bash
+./build-flask.sh
+```
+
+Then build the Tauri app:
+```cmd
+npm install
 npm run tauri build
 ```
 
