@@ -11,7 +11,7 @@ from backend.system import get_resource_path # pylint: disable=import-error
 
 LOGICAL_OPERATORS = {"AND", "NOT", "OR", "(", ")"}
 STOPLIST_PATH = get_resource_path("backend/stoplist.txt")
-URL_PATTERN = re.compile(r'\b(?:https?://)?(?:www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?')
+URL_PATTERN = re.compile(r'\b(?:https?://)?(?:www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}(?:/[^\s]*)?')
 DATE_PATTERN = re.compile(r'\b(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(\d{4})\b')
 FILTER_RE = re.compile(r'[“\-_\.,0-9]{2,}')
 SPLIT_RE = re.compile(r"[’']+")

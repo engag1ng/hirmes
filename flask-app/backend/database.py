@@ -94,8 +94,11 @@ def get_metadata_from_doc_id_or_path(conn, doc_id: int = None, path: str = None)
         return None
     row = cur.fetchone()
     if row:
-        data = json.loads(row[0])
-        return data
+        if row[0] != None:
+            data = json.loads(row[0])
+            return data
+        else:
+            return {}
     return None
 
 def update_metadata_from_doc_id(conn, doc_id: int, updates: dict):
@@ -114,7 +117,10 @@ def update_metadata_from_doc_id(conn, doc_id: int, updates: dict):
     if not row:
         return
 
-    metadata = json.loads(row[0])
+    if row[0] is not None:
+        metadata = json.loads(row[0])
+    else:
+        metadata = {}
     metadata.update(updates)
 
     cur.execute(
@@ -312,6 +318,9 @@ def delete_documents(conn, to_delete: list):
 
     cur = conn.cursor()
     placeholders = ",".join("?" * len(to_delete))
-    query = f"DELETE FROM Document WHERE path IN ({placeholders})"
-    cur.execute(query, tuple(to_delete))
+    cur.execute(
+        f"DELETE FROM Posting WHERE doc_id IN (SELECT doc_id FROM Document WHERE path IN ({placeholders}))",
+        tuple(to_delete)
+    )
+    cur.execute(f"DELETE FROM Document WHERE path IN ({placeholders})", tuple(to_delete))
     conn.commit()

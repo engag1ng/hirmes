@@ -109,10 +109,9 @@ class TestIndexPathDatabase:
         index_path(str(tmp_path), is_recursive=False)
         conn = sqlite3.connect(temp_db)
         docs = fetch_all_documents(conn)
+        txt_rows = fetch_postings_for_token(conn, "indexable")
         conn.close()
         # .png is not supported; .txt is
-        # Both end up in the file_paths list (current behavior) but only .txt gets postings
-        txt_rows = fetch_postings_for_token(conn, "indexable")
         assert not any("image.png" in p for p in docs if p.endswith(".png"))
 
 
@@ -123,20 +122,20 @@ class TestProgressCallback:
     def test_callback_call_count(self, temp_db, text_files):
         """Expect 1 initial call (0/total) + 1 per file = total+1 calls."""
         calls = []
-        index_path(str(text_files), is_recursive=False, progress_callback=calls.append)
+        index_path(str(text_files), is_recursive=False, progress_callback=lambda c, t: calls.append((c, t)))
         # 2 files → 3 calls: (0,2), (1,2), (2,2)
         assert len(calls) == 3
 
     def test_callback_starts_at_zero(self, temp_db, text_files):
         calls = []
-        index_path(str(text_files), is_recursive=False, progress_callback=calls.append)
+        index_path(str(text_files), is_recursive=False, progress_callback=lambda c, t: calls.append((c, t)))
         current, total = calls[0]
         assert current == 0
         assert total == 2
 
     def test_callback_ends_at_total(self, temp_db, text_files):
         calls = []
-        index_path(str(text_files), is_recursive=False, progress_callback=calls.append)
+        index_path(str(text_files), is_recursive=False, progress_callback=lambda c, t: calls.append((c, t)))
         current, total = calls[-1]
         assert current == total == 2
 

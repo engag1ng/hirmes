@@ -144,12 +144,10 @@ def _get_files_without_id(path: str, is_recursive: bool) -> dict:
             files_found += recursive_result["number_files_found"]
             without_id += recursive_result["file_paths"]
         elif os.path.isfile(full_path):
-            if full_path not in all_indexed:
-                if os.stat(full_path).st_size != 0 and match_extractor(full_path) is not None:
+            if match_extractor(full_path) is not None:
+                if full_path not in all_indexed:
                     without_id.append(full_path)
-                else:
-                    without_id.append(full_path)
-                files_found += 1
+                    files_found += 1
 
     return {"number_files_found": files_found, "file_paths": without_id}
 
