@@ -3,6 +3,9 @@ Main Flask application file including routes and functions.
 """
 
 import os
+import sys
+import sqlite3
+import subprocess
 import threading
 import importlib
 import pkgutil
@@ -11,12 +14,11 @@ from waitress import create_server
 from backend.indexer import index_path
 from backend.search import search_index, make_full_text
 from backend.watchdog import run_watchdog
-from backend.settings import load_settings, save_settings
-
-APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
-os.makedirs(APP_FOLDER, exist_ok=True)
+from backend.settings import load_settings, save_settings, APP_FOLDER
+from backend.database import get_metadata_from_doc_id_or_path, update_metadata_from_doc_id
 
 WATCHDOG_FILE = os.path.join(APP_FOLDER, "watchdog.txt")
+DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
 server = None # pylint: disable=invalid-name
 
@@ -49,7 +51,10 @@ def open_file():
         return jsonify(error='File not found'), 404
 
     try:
-        os.startfile(file_path)
+        if sys.platform == "win32":
+            os.startfile(file_path)
+        else:
+            subprocess.Popen(["xdg-open", file_path])
     except Exception as e:
         return jsonify(error=str(e)), 500
 
@@ -151,6 +156,40 @@ def shutdown():
 
     threading.Thread(target=shutdown_server).start()
     return jsonify({"message": "Sever is shutting down"}), 200
+
+@app.route('/tagging/tags', methods=['POST'])
+def tagging_get_tags():
+    """Returns all tags for a given file path."""
+    data = request.get_json(force=True)
+    path = data["path"]
+    conn = sqlite3.connect(DB_PATH)
+    metadata = get_metadata_from_doc_id_or_path(conn, path=path)
+    conn.close()
+    return jsonify({"tag": metadata.get("tags")})
+
+@app.route('/tagging/save', methods=['POST'])
+def tagging_save_tags():
+    """Saves tags for a document to the database."""
+    data = request.get_json(force=True)
+    path = data["path"]
+    tags = data["tags"]
+    if not path:
+        return jsonify({"error": "Missing 'path'"}), 400
+    if not isinstance(tags, list):
+        return jsonify({"error": "'tags' must be a list of strings"}), 400
+    tags = [str(t) for t in tags]
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT doc_id FROM Document WHERE path = ?", (path,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"error": f"No document found with path {path}"}), 404
+    doc_id = row[0]
+    update_metadata_from_doc_id(conn, doc_id, {"tags": tags})
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok", "path": path, "tags": tags})
 
 def discover_extensions():
     """Find and import all modules in a package that define a 'blueprint'."""

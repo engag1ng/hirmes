@@ -26,9 +26,7 @@ from backend.database import ( # pylint: disable=import-error
     fetch_all_documents
 )
 from backend.tokenizer import tokenize # pylint: disable=import-error
-
-APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
-os.makedirs(APP_FOLDER, exist_ok=True)
+from backend.settings import APP_FOLDER # pylint: disable=import-error
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 

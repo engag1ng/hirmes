@@ -3,8 +3,12 @@
 
 import json
 import os
+import sys
 
-APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
+if sys.platform == "win32":
+    APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
+else:
+    APP_FOLDER = os.path.join(os.path.expanduser("~"), ".local", "share", "Hirmes")
 os.makedirs(APP_FOLDER, exist_ok=True)
 
 SETTINGS_FILE = os.path.join(APP_FOLDER, "config.json")

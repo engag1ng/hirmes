@@ -81,16 +81,5 @@
     function goToSettings() {
         window.location.href = "/settings";
     }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        fetch("/tagging/check", { method: "OPTIONS" })
-        .then(res => {
-            if (!res.ok) throw new Error("Tagging route not available");
-        })
-        .catch(err => {
-            console.error("Tagging route missing:", err);
-            document.querySelectorAll(".tagging-header, .tagging-cell").forEach(el => el.remove());
-        });
-    });
 </script>
 </html>

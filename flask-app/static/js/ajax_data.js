@@ -86,7 +86,7 @@ function displaySearchResults(results) {
                     <td><a href="#" class="open-file" data-path="${row.path}">${row.path}</a></td>
                     <td>${row.page_numbers.join(", ")}</td>
                     <td><ul>${row.match_terms.map(t => `<li>${t}</li>`).join('')}</ul></td>
-                    <td><ul>${row.snippet.map(s => `<li>${s}</li>`).join('')}</ul></td>
+                    <td><ul>${(row.snippet || []).map(s => `<li>${s}</li>`).join('')}</ul></td>
                     <td class="tagging-cell" data-path=${row.path}>
                         <input type="text" id="tags-input" name="tags-input" value="${row.path}" />
                     </td>
@@ -101,37 +101,28 @@ function displaySearchResults(results) {
         });
     });
 
-    fetch("/tagging/check", { method: "OPTIONS" })
+    document.querySelectorAll(".tagging-cell").forEach(cell => {
+        const input = cell.querySelector("input");
+        const path = input.value;
+
+        fetch("/tagging/tags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: path })
+        })
         .then(res => {
-            if (!res.ok) throw new Error("Tagging route not available");
-
-            document.querySelectorAll(".tagging-cell").forEach(cell => {
-            const input = cell.querySelector("input");
-            const path = input.value; 
-
-            fetch("/tagging/tags", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ path: path })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error(`Tagging failed for ${path}`);
-                return res.json();
-            })
-            .then(data => {
-                input.value = data.tag || "";
-                input.placeholder = "(no tags)";
-            })
-            .catch(err => {
-                console.error(err);
-                cell.textContent = "Error";
-            });
-            });
+            if (!res.ok) throw new Error(`Tagging failed for ${path}`);
+            return res.json();
+        })
+        .then(data => {
+            input.value = data.tag || "";
+            input.placeholder = "(no tags)";
         })
         .catch(err => {
-            console.error("Tagging route missing:", err);
-            document.querySelectorAll(".tagging-header, .tagging-cell").forEach(el => el.remove());
+            console.error(err);
+            cell.textContent = "Error";
         });
+    });
     document.body.appendChild(container);
 
     document.querySelectorAll(".tagging-cell input").forEach(input => {

@@ -8,11 +8,8 @@ Typical usage:
 import sqlite3
 import os
 from backend.indexer import repeat_indexing, index_path # pylint: disable=import-error
-from backend.settings import load_settings # pylint: disable=import-error
+from backend.settings import load_settings, APP_FOLDER # pylint: disable=import-error
 from backend.database import initialise_db # pylint: disable=import-error
-
-APP_FOLDER = os.path.join(os.getenv("APPDATA"), "Hirmes")
-os.makedirs(APP_FOLDER, exist_ok=True)
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
