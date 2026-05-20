@@ -23,6 +23,9 @@ def initialise_db(conn):
 
     cur = conn.cursor()
     cur.executescript("""
+    PRAGMA journal_mode = WAL;
+    PRAGMA busy_timeout = 30000;
+
     CREATE TABLE IF NOT EXISTS Document (
     doc_id   INTEGER PRIMARY KEY AUTOINCREMENT,
     path     TEXT UNIQUE NOT NULL,

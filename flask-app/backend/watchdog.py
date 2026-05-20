@@ -7,6 +7,7 @@ Typical usage:
 
 import sqlite3
 import os
+import threading
 from backend.indexer import repeat_indexing, index_path # pylint: disable=import-error
 from backend.settings import load_settings, APP_FOLDER # pylint: disable=import-error
 from backend.database import initialise_db # pylint: disable=import-error
@@ -14,6 +15,8 @@ from backend.database import initialise_db # pylint: disable=import-error
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
 
 WATCHDOG_PATH = os.path.join(APP_FOLDER, "watchdog.txt")
+
+_watchdog_lock = threading.Lock()
 
 def run_watchdog(n: int) -> tuple[int]:
     """Reindexes n files.
@@ -24,12 +27,18 @@ def run_watchdog(n: int) -> tuple[int]:
     Returns:
         (int, int, int): Files reindexed, deleted, newly indexed
     """
-    conn = sqlite3.connect(DB_PATH)
-    initialise_db(conn)
-    to_index = _find_files_to_reindex(conn, n)
-    number_reindexed, number_deleted = repeat_indexing(conn, to_index)
-    conn.close()
-    number_files_indexed = _check_watchdog_list()
+    if not _watchdog_lock.acquire(blocking=False):
+        return 0, 0, 0
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        initialise_db(conn)
+        to_index = _find_files_to_reindex(conn, n)
+        number_reindexed, number_deleted = repeat_indexing(conn, to_index)
+        conn.close()
+        number_files_indexed = _check_watchdog_list()
+    finally:
+        _watchdog_lock.release()
 
     return number_reindexed, number_deleted, number_files_indexed
 
