@@ -67,7 +67,7 @@ def pdf(path: str) -> list | None:
         document = pymupdf.open(path)
         pages = [page.get_text() for page in document]
         return pages
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 def docx(path: str) -> list | None:
@@ -84,7 +84,7 @@ def docx(path: str) -> list | None:
     try:
         raw_content = docx2txt.process(path)
         return [raw_content]
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 def pptx(path: str) -> list | None:
@@ -107,7 +107,7 @@ def pptx(path: str) -> list | None:
                     slide_text += shape.text+"\n"
                 slides.append(slide_text)
         return slides
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 def markdown(path: str) -> list | None:

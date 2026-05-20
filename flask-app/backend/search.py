@@ -12,7 +12,8 @@ from importlib.resources import files
 from symspellpy import SymSpell
 from backend.tokenizer import tokenize_query # pylint: disable=import-error
 from backend.read import match_extractor # pylint: disable=import-error
-from backend.database import fetch_postings_by_doc_id, fetch_paths_for_doc_ids, fetch_all_doc_ids, delete_documents # pylint: disable=import-error
+from backend.database import fetch_postings_by_doc_id, fetch_paths_for_doc_ids, \
+    fetch_all_doc_ids, delete_documents # pylint: disable=import-error
 from backend.settings import APP_FOLDER # pylint: disable=import-error
 
 DB_PATH = os.path.join(APP_FOLDER, "index.db")
@@ -228,7 +229,11 @@ def _evaluate_not(conn, operand: list) -> list:
     while i < len(all_doc_ids) and j < len(operand):
         did = all_doc_ids[i]
         if did < operand[j]["doc_id"]:
-            result.append({"doc_id": did, "match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
+            result.append({"doc_id": did,
+                            "match_count": 0,
+                            "total_tf": 0,
+                            "terms": set(),
+                            "pages": set()})
             i += 1
         elif did > operand[j]["doc_id"]:
             j += 1
@@ -236,9 +241,46 @@ def _evaluate_not(conn, operand: list) -> list:
             i += 1
             j += 1
     while i < len(all_doc_ids):
-        result.append({"doc_id": all_doc_ids[i], "match_count": 0, "total_tf": 0, "terms": set(), "pages": set()})
+        result.append({"doc_id": all_doc_ids[i],
+                        "match_count": 0,
+                        "total_tf": 0,
+                        "terms": set(),
+                        "pages": set()})
         i += 1
     return result
+
+def _build_posting_list(conn, token: str) -> list:
+    """Builds a posting list for a single token from the database.
+
+    Args:
+        conn: SQLite3 connection object.
+        token: Search term string.
+
+    Returns:
+        posting_list: Sorted list of posting dicts keyed by doc_id.
+    """
+    posting_list = []
+    current_doc_id = None
+    current_entry = {}
+    for doc_id, page, tf in fetch_postings_by_doc_id(conn, token):
+        if doc_id != current_doc_id:
+            if current_entry:
+                posting_list.append(current_entry)
+            current_doc_id = doc_id
+            current_entry = {
+                "doc_id": doc_id,
+                "match_count": 1,
+                "total_tf": tf,
+                "terms": {token},
+                "pages": {page},
+            }
+        else:
+            current_entry["match_count"] += 1
+            current_entry["total_tf"] += tf
+            current_entry["pages"].add(page)
+    if current_entry:
+        posting_list.append(current_entry)
+    return posting_list
 
 def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
     """Evaluates RPN boolean expression and returns ranked results.
@@ -283,29 +325,7 @@ def _evaluate_rpn_ranked(rpn_tokens: list) -> list | None:
                     stack.append(_evaluate_or(left, right))
 
         else:
-            raw_rows = fetch_postings_by_doc_id(conn, token)
-            posting_list = []
-            current_doc_id = None
-            current_entry = None
-            for doc_id, page, tf in raw_rows:
-                if doc_id != current_doc_id:
-                    if current_entry is not None:
-                        posting_list.append(current_entry)
-                    current_doc_id = doc_id
-                    current_entry = {
-                        "doc_id": doc_id,
-                        "match_count": 1,
-                        "total_tf": tf,
-                        "terms": {token},
-                        "pages": {page},
-                    }
-                else:
-                    current_entry["match_count"] += 1
-                    current_entry["total_tf"] += tf
-                    current_entry["pages"].add(page)
-            if current_entry is not None:
-                posting_list.append(current_entry)
-            stack.append(posting_list)
+            stack.append(_build_posting_list(conn, token))
 
     if len(stack) != 1:
         conn.close()

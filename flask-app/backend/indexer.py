@@ -47,11 +47,10 @@ def index_path(path: str, is_recursive: bool, progress_callback=None) -> int:
     """
 
     result = _get_files_without_id(path, is_recursive)
-    number_files_found = result["number_files_found"]
     files_without_id = result["file_paths"]
     _index_files(files_without_id, progress_callback)
 
-    return number_files_found
+    return result["number_files_found"]
 
 def _get_timestamp():
     """Returns current timestamp.
@@ -95,11 +94,9 @@ def _index_files(to_index: list, progress_callback=None):
                 doc_id = get_or_create_doc_id(conn, file_path, metadata=metadata)
 
                 for page_idx, tokens in enumerate(pages, start=1):
-                    counts = Counter(tokens)                     # token -> tf (on that page)
-                    token_tf_pairs = list(counts.items())
                     bulk_upsert_postings(
                         conn,
-                        token_tf_pairs,
+                        list(Counter(tokens).items()),
                         doc_id, page_idx,
                         _token_cache=token_cache
                     )

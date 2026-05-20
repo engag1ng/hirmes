@@ -189,6 +189,8 @@ def tagging_get_tags():
     conn = sqlite3.connect(DB_PATH)
     metadata = get_metadata_from_doc_id_or_path(conn, path=path)
     conn.close()
+    if not metadata:
+        return jsonify({"tag": "Error fetching tags"})
     return jsonify({"tag": metadata.get("tags")})
 
 @app.route('/tagging/save', methods=['POST'])
