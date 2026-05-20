@@ -28,9 +28,8 @@ def run_watchdog(n: int) -> tuple[int]:
     initialise_db(conn)
     to_index = _find_files_to_reindex(conn, n)
     number_reindexed, number_deleted = repeat_indexing(conn, to_index)
-    number_files_indexed = _check_watchdog_list()
-    conn.commit()
     conn.close()
+    number_files_indexed = _check_watchdog_list()
 
     return number_reindexed, number_deleted, number_files_indexed
 

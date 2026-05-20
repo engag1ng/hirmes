@@ -125,9 +125,10 @@ def _get_files_without_id(path: str, is_recursive: bool) -> dict:
     """
 
     conn = sqlite3.connect(DB_PATH)
+    all_indexed = fetch_all_documents(conn)
+    conn.close()
     files_found = 0
     without_id = []
-    all_indexed = fetch_all_documents(conn)
 
     try:
         objects = os.listdir(path)

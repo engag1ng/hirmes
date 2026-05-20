@@ -9,6 +9,8 @@ Typical usage:
 from pathlib import Path
 import pymupdf
 import docx2txt
+
+pymupdf.TOOLS.mupdf_display_errors(False)
 from pptx import Presentation
 
 def match_extractor(path: str):
