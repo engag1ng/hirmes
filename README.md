@@ -44,25 +44,35 @@ pip install -r requirements.txt
 ``` 
 
 ### Build
-In `/`, first bundle the Flask backend:
+
+#### Prerequisites (Linux)
+Install the required system libraries before building on Linux:
+```bash
+sudo dnf install webkit2gtk4.1-devel javascriptcoregtk4.1-devel openssl-devel  # Fedora
+sudo apt install libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libssl-dev  # Ubuntu/Debian
+```
+
+#### Steps
+In `/`, install npm dependencies and build:
+
+**Linux:**
+```bash
+npm install
+npm run build
+```
 
 **Windows:**
-```cmd
-build-flask.bat
-```
-
-**Linux/macOS:**
-```bash
-./build-flask.sh
-```
-
-Then build the Tauri app:
 ```cmd
 npm install
 npm run tauri build
 ```
 
-Result can be found in `src-tauri/target/release/`.
+The `npm run build` script on Linux also sets `APPIMAGE_EXTRACT_AND_RUN=1` to allow AppImage bundling without FUSE.
+
+> [!NOTE]
+> The Flask backend is compiled with PyInstaller into a platform-native binary (`bin/app` on Linux, `bin/app.exe` on Windows). PyInstaller cannot cross-compile, so each platform must be built on its own OS.
+
+Result can be found in `src-tauri/target/release/bundle/`.
 
 ### Usage
 1. Execute `hirmes.exe`.

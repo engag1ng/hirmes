@@ -1,17 +1,18 @@
 {
   "name": "hirmes",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
+    "build": "APPIMAGE_EXTRACT_AND_RUN=1 tauri build",
+    "build:appimage": "APPIMAGE_EXTRACT_AND_RUN=1 tauri build --bundles appimage",
+    "build:packages": "tauri build --bundles deb,rpm",
     "build:flask": "node -e \"require('child_process').execSync(process.platform==='win32'?'build-flask.bat':'sh ./build-flask.sh',{stdio:'inherit'})\""
   },
   "devDependencies": {
-    "@tauri-apps/api": "^1.4.0",
-    "@tauri-apps/cli": "^1.4.0"
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/cli": "^2.11.2"
   },
-  "dependencies": {
-    "tauri-plugin-autostart-api": "github:tauri-apps/tauri-plugin-autostart#v1"
-  }
+  "dependencies": {}
 }
