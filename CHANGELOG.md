@@ -1,3 +1,15 @@
+# 0.4.0 (2026-05-20)
+## Added
+* Linux compatibility
+* Various tests and benchmarks
+## Changed
+* Progress bar now portrays actual indexing progress
+* Speed up indexing and AND/OR evaluation by 50%
+## Removed
+## Fixed
+* _get_files_without_id would never close connection
+* database access would fail due to blocking
+
 # 0.3.0 (2025-10-02)
 ## Added
 * Settings menu
