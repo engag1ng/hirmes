@@ -3,4 +3,6 @@ taskkill /f /im app.exe >nul 2>&1
 del ..\src-tauri\bin\app.exe >nul 2>&1
 call .venv\Scripts\activate
 pyinstaller app.spec --distpath ..\src-tauri\bin
-deactivate
+if %errorlevel% neq 0 exit /b %errorlevel%
+call deactivate 2>nul
+exit /b 0
