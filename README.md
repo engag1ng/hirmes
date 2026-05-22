@@ -26,6 +26,8 @@ This is a simple step-by-step guide on how to use this program.
 
 - Rust (required by Tauri)
   - Visit https://rustup.rs/ and follow the instructions for your platform
+- C++ Build Tools
+- node.js / npm
   
 ### Installation
 1. Clone the project files:
@@ -53,7 +55,6 @@ sudo apt install libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libssl-dev  
 ```
 
 #### Steps
-In `/`, install npm dependencies and build:
 
 **Linux:**
 ```bash

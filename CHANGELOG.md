@@ -1,4 +1,4 @@
-# 0.4.0 (2026-05-20)
+# 0.4.0 (2026-05-22)
 ## Added
 * Linux compatibility
 * Various tests and benchmarks
